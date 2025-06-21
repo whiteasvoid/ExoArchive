@@ -2,7 +2,7 @@
 
 ExoArchive é um projeto de aprendizado de APIs que interage com a API do **Bungie.net** para o jogo **Destiny 2**. O objetivo é criar uma ferramenta semelhante a plataformas como **Destiny Item Manager (DIM)**, **light.gg** e **TodayInDestiny**, fornecendo funcionalidades como busca de itens, informações sobre jogadores, inventário de vendedores (ex.: Xur) e gerenciamento de dados do manifesto, tudo em um único programa Python.
 
-Este projeto é voltado para iniciantes que desejam aprender sobre chamadas a APIs REST, autenticação OAuth, manipulação de bancos de dados SQLite e organização de projetos Python.
+Este projeto é projetado a iniciantes que queiram aprender sobre chamadas a APIs REST, autenticação OAuth, manipulação de bases de dados SQLite e organização de projetos Python.
 
 ---
 
@@ -32,14 +32,14 @@ O **ExoArchive** tem como objetivo:
 
 ## Configuração
 
-1. **Clone o Repositório** (se aplicável):
+1. **Clonar o Repositório** (se aplicável):
 
    ```bash
-   git clone <URL_DO_REPOSITORIO>
+   git clone https://github.com/whiteasvoid/ExoArchive/
    cd ExoArchive
    ```
 
-2. **Crie um Ambiente Virtual** (opcional, mas recomendado):
+2. **Criar um Ambiente Virtual** (opcional, mas recomendado):
 
    ```bash
    python -m venv venv
@@ -47,34 +47,34 @@ O **ExoArchive** tem como objetivo:
    venv\Scripts\activate     # Windows
    ```
 
-3. **Instale as Dependências**:
+3. **Instalar as Dependências**:
 
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure as Credenciais da API**:
+4. **Configurar as Credenciais da API**:
 
-   - Abra `src/config/config.py` e insira sua chave de API (`X-API-Key`), `CLIENT_ID` e `CLIENT_SECRET` obtidos no portal de desenvolvedores do Bungie.net.
+   - Abrir `src/config/config.py` e inserir a chave API (`X-API-Key`), `CLIENT_ID` e `CLIENT_SECRET` obtidos no portal de desenvolvedores do Bungie.net.
 
-5. **Gere Certificados SSL**:
+5. **Gerar Certificados SSL**:
 
-   - Crie a pasta `certificates/` no diretório raiz do projeto.
-   - No PowerShell, execute os seguintes comandos para gerar certificados autoassinados:
+   - Criar a pasta `certificates/` no diretório raiz do projeto.
+   - No PowerShell, executar os seguintes comandos para gerar certificados autoassinados:
      ```powershell
-     New-Item -ItemType Directory -Path C:\Users\Joao\Projetos\Python\ExoArchive\certificates -Force
-     cd C:\Users\Joao\Projetos\Python\ExoArchive\certificates
+     New-Item -ItemType Directory -Path {path}\certificates -Force
+     cd {path}\certificates
      openssl req -x509 -newkey rsa:2048 -keyout localhost.key -out localhost.crt -days 365 -nodes -subj "/C=PT/ST=Estado/L=Cidade/O=MinhaApp/CN=localhost"
      ```
 
-6. **Execute o Programa**:
+6. **Executar o Programa**:
 
    ```bash
    python main.py
    ```
 
    - O programa abrirá um navegador para autenticação OAuth no Bungie.net.
-   - Após o login, o token será salvo em `destiny_manifest/oauth_token.json`.
+   - Após o login, o token será guardado em `destiny_manifest/oauth_token.json`.
 
 ---
 
@@ -120,7 +120,7 @@ O programa utiliza a API do Bungie.net para interagir com dados do Destiny 2. Ab
 
 1. **Buscar um Item**:
 
-   - No arquivo `main.py`, a chamada `search_items_by_name(manifest_data, "Gjallarhorn")` procura itens com "Gjallarhorn" no nome e exibe seus detalhes.
+   - No arquivo `main.py`, a função `search_items_by_name(manifest_data, "Gjallarhorn")` procura itens com "Gjallarhorn" no nome e exibe seus detalhes.
 
 2. **Ver Itens do Xur**:
 
@@ -155,11 +155,11 @@ O programa utiliza a API do Bungie.net para interagir com dados do Destiny 2. Ab
 
 Este é um projeto de aprendizado, e contribuições são bem-vindas! Para contribuir:
 
-1. Faça um fork do repositório.
-2. Crie uma branch para sua funcionalidade (`git checkout -b feature/nova-funcionalidade`).
+1. Fazer um fork do repositório.
+2. Criar uma branch para sua funcionalidade (`git checkout -b feature/nova-funcionalidade`).
 3. Commit suas alterações (`git commit -m "Adiciona nova funcionalidade"`).
-4. Envie para o repositório remoto (`git push origin feature/nova-funcionalidade`).
-5. Abra um Pull Request.
+4. Enviar para o repositório remoto (`git push origin feature/nova-funcionalidade`).
+5. Abrir um Pull Request.
 
 ---
 
@@ -179,4 +179,4 @@ Este projeto é licenciado sob a [MIT License](LICENSE).
 
 ## Contato
 
-Para dúvidas ou sugestões, entre em contato via [email@example.com] ou abra uma issue no repositório.
+Para dúvidas ou sugestões, entre em contato via [joaomiguelcurto@outlook.com] ou abra uma issue no repositório.
