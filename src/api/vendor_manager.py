@@ -63,7 +63,7 @@ def display_xur_items(manifest_data, membership_type, destiny_membership_id, cha
         destiny_membership_id (str): ID da associação do jogador.
         character_id (str): ID do personagem do jogador.
     """
-    from item_search import get_item_details
+    from src.api.item_search import get_item_details
     
     # Obtém os dados do inventário do Xur
     xur_data = get_xur_inventory(membership_type, destiny_membership_id, character_id)

@@ -6,8 +6,8 @@ from src.config.config import HEADERS, MANIFEST_FOLDER
 
 # Função que cria a pasta para o manifest, se não existir
 def ensure_manifest_folder():
-    # Obtém o diretório onde este script está
-    scriptFolder = os.path.dirname(os.path.abspath(__file__))
+    # Obtém o diretório raiz do projeto
+    scriptFolder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     # Junta o diretório com o nome da pasta do manifest
     manifestPath = os.path.join(scriptFolder, MANIFEST_FOLDER)
     

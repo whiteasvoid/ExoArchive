@@ -10,7 +10,7 @@ import os
 import ssl
 
 # Obtém o diretório raiz do projeto
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Caminho absoluto para o arquivo de token
 TOKEN_FILE = os.path.join(BASE_DIR, "destiny_manifest", "oauth_token.json")

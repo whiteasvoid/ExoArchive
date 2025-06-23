@@ -62,7 +62,7 @@ def create_manifest_data():
     if not os.path.isfile(picklePath):
         print("A criar novos dados do manifesto...")
         # Baixa o manifesto
-        from manifest_manager import get_manifest
+        from src.api.manifest_manager import get_manifest
         get_manifest()        
         # Cria o dicionário com os dados
         allData = build_dict(hash_dict)
