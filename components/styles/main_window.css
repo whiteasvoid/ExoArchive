@@ -1,0 +1,40 @@
+/* Estilos gerais da janela principal */
+QMainWindow {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Widget central */
+QWidget {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Espaçamento geral */
+QVBoxLayout {
+    spacing: 12px;
+    margin: 16px;
+}
+
+/* Scrollbar personalizada */
+QScrollBar:vertical {
+    background-color: #f8f8f8;
+    width: 8px;
+    border-radius: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #d0d0d0;
+    border-radius: 0px;
+    min-height: 16px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #a0a0a0;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    border: none;
+    background: none;
+}

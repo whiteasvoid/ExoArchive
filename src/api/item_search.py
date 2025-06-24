@@ -25,7 +25,7 @@ def search_items_by_name(tableData, searchValue):
     if foundItems:
         print(f"Encontrados {len(foundItems)} items:")
         # Mostra apenas os primeiros 10 resultados
-        for id_hash, item in foundItems[:10]:
+        for index, (id_hash, item) in enumerate(foundItems[:10]):
             propriedades = item.get('displayProperties', {})
             nome = propriedades.get('name', 'Desconhecido')
             descricao = propriedades.get('description', 'Sem descrição')
@@ -34,7 +34,10 @@ def search_items_by_name(tableData, searchValue):
             print(f"\nNome: {nome}")
             print(f"Hash: {id_hash}")
             print(f"Tipo: {tipo_item}")
-            print(f"Descrição: {descricao[:100]}...")
+            print(f"Descrição: {descricao[:300]}...")
+            
+            if index < len(foundItems[:10]) - 1:
+                print("=" * 20)
     else:
         print("Nenhum item encontrado com esse termo de pesquisa")
 
@@ -78,7 +81,7 @@ def search_items_by_type(tableData, searchValue, hasDescription):
             print(f"Hash: {id_hash}")
             print(f"Tipo: {tipo_item}")
             print(f"Raridade: {tier_item}")
-            print(f"Descrição: {descricao[:100]}...")
+            print(f"Descrição: {descricao[:300]}...")
     else:
         print("Nenhum item encontrado com esse termo de pesquisa")
 

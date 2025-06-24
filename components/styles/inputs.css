@@ -1,0 +1,36 @@
+/* Estilos para campos de entrada */
+QLineEdit {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #e0e0e0;
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: 2px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 18px;
+}
+
+QLineEdit:focus {
+    border-color: #808080;
+    background-color: #ffffff;
+}
+
+QLineEdit:hover {
+    border-color: #c0c0c0;
+}
+
+/* Área de texto */
+QTextEdit {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #e0e0e0;
+    padding: 8px;
+    font-size: 12px;
+    border-radius: 2px;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    line-height: 1.4;
+}
+
+QTextEdit:focus {
+    border-color: #808080;
+}
