@@ -11,7 +11,7 @@ def search_items_by_name(tableData, searchValue):
     # Verifica se a tabela de items existe
     if 'DestinyInventoryItemDefinition' not in tableData:
         print("Tabela de items não encontrada nos dados do manifesto")
-        return []
+        return
     
     # Obtém todos os items
     items = tableData['DestinyInventoryItemDefinition']
@@ -22,33 +22,30 @@ def search_items_by_name(tableData, searchValue):
         if 'displayProperties' in item and 'name' in item['displayProperties']:
             nome = item['displayProperties']['name']
             if searchValue.lower() in nome.lower():
-                # Adiciona o URL do ícone ao item
-                icone = item['displayProperties'].get('icon', None)
-                item['icon_url'] = f"{BUNGIE_BASE_URL}{icone}" if icone else "Sem ícone disponível"
                 foundItems.append((id_hash, item))
     
-    # Mostra os resultados (limita a saída de console a 10 itens)
+    # Mostra os resultados
     if foundItems:
         print(f"Encontrados {len(foundItems)} items:")
+        # Mostra apenas os primeiros 10 resultados
         for index, (id_hash, item) in enumerate(foundItems[:10]):
             propriedades = item.get('displayProperties', {})
             nome = propriedades.get('name', 'Desconhecido')
             descricao = propriedades.get('description', 'Sem descrição')
             tipo_item = item.get('itemTypeDisplayName', 'Tipo Desconhecido')
-            icone_url = item['icon_url']
+            icon = propriedades.get('icon', None)
+            icon_url = f"{BUNGIE_BASE_URL}{icon}" if icon else "Sem ícone disponível"
             
             print(f"\nNome: {nome}")
             print(f"Hash: {id_hash}")
             print(f"Tipo: {tipo_item}")
             print(f"Descrição: {descricao[:300]}...")
-            print(f"Ícone: {icone_url}")
+            print(f"Icon: {icon_url}")
             
             if index < len(foundItems[:10]) - 1:
                 print("=" * 20)
     else:
         print("Nenhum item encontrado com esse termo de pesquisa")
-    
-    return foundItems  # Retorna todos os itens encontrados
 
 # Função que procura items pelo tipo
 def search_items_by_type(tableData, searchValue, hasDescription):
@@ -57,7 +54,7 @@ def search_items_by_type(tableData, searchValue, hasDescription):
     # Verifica se a tabela de items existe
     if 'DestinyInventoryItemDefinition' not in tableData:
         print("Tabela de items não encontrada nos dados do manifesto")
-        return []
+        return
     
     # Obtém todos os items
     items = tableData['DestinyInventoryItemDefinition']
@@ -71,37 +68,31 @@ def search_items_by_type(tableData, searchValue, hasDescription):
             if searchValue.lower() in tierName.lower():
                 if hasDescription:
                     if description != "":
-                        # Adiciona o URL do ícone ao item
-                        icone = item['displayProperties'].get('icon', None)
-                        item['icon_url'] = f"{BUNGIE_BASE_URL}{icone}" if icone else "Sem ícone disponível"
                         foundItems.append((id_hash, item))
                 else:
-                    # Adiciona o URL do ícone ao item
-                    icone = item['displayProperties'].get('icon', None)
-                    item['icon_url'] = f"{BUNGIE_BASE_URL}{icone}" if icone else "Sem ícone disponível"
                     foundItems.append((id_hash, item))
     
-    # Mostra os resultados (limita a saída de console a 10 itens)
+    # Mostra os resultados
     if foundItems:
         print(f"Encontrados {len(foundItems)} items:")
+        # Mostra apenas os primeiros 10 resultados
         for id_hash, item in foundItems[:10]:
             propriedades = item.get('displayProperties', {})
             nome = propriedades.get('name', 'Desconhecido')
             descricao = propriedades.get('description', 'Sem descrição')
             tipo_item = item.get('itemTypeDisplayName', 'Tipo Desconhecido')
             tier_item = item.get('inventory', {}).get('tierTypeName', 'Desconhecido')
-            icone_url = item['icon_url']
+            icon = propriedades.get('icon', None)
+            icon_url = f"{BUNGIE_BASE_URL}{icon}" if icon else "Sem ícone disponível"
             
             print(f"\nNome: {nome}")
             print(f"Hash: {id_hash}")
             print(f"Tipo: {tipo_item}")
             print(f"Raridade: {tier_item}")
             print(f"Descrição: {descricao[:300]}...")
-            print(f"Ícone: {icone_url}")
+            print(f"Icon: {icon_url}")
     else:
         print("Nenhum item encontrado com esse termo de pesquisa")
-    
-    return foundItems  # Retorna todos os itens encontrados
 
 # Função que mostra detalhes de um item específico
 def get_item_details(tableData, hash_item):
@@ -116,8 +107,8 @@ def get_item_details(tableData, hash_item):
     if hash_item in items:
         item = items[hash_item]
         propriedades = item.get('displayProperties', {})
-        icone = propriedades.get('icon', None)
-        icone_url = f"{BUNGIE_BASE_URL}{icone}" if icone else "Sem ícone disponível"
+        icon = propriedades.get('icon', None)
+        icon_url = f"{BUNGIE_BASE_URL}{icon}" if icon else "Sem ícone disponível"
         
         print(f"\n=== DETALHES DO ITEM ===")
         print(f"Nome: {propriedades.get('name', 'Desconhecido')}")
@@ -125,10 +116,10 @@ def get_item_details(tableData, hash_item):
         print(f"Tipo: {item.get('itemTypeDisplayName', 'Tipo Desconhecido')}")
         print(f"Nível: {item.get('inventory', {}).get('tierTypeName', 'Nível Desconhecido')}")
         print(f"Descrição: {propriedades.get('description', 'Sem descrição')}")
-        print(f"Ícone: {icone_url}")
+        print(f"Icon: {icon_url}")
         
         # Retorna o item com o URL do ícone para uso na UI
-        item['icon_url'] = icone_url
+        item['icon_url'] = icon_url
         return item
     else:
         print(f"Item com hash {hash_item} não encontrado")

@@ -21,6 +21,12 @@ class StyleManager:
         self.styles_dir = os.path.join(current_dir, styles_dir)
         self._styles_cache: Dict[str, str] = {}
         self._ensure_styles_dir()
+        
+        # Carrega os estilos iniciais
+        self.load_style("buttons")
+        self.load_style("inputs")
+        self.load_style("labels")
+        self.load_style("images")  # Novo arquivo de estilos para imagens
     
     def _ensure_styles_dir(self):
         """Verifica se o diretório de estilos existe"""
@@ -126,6 +132,21 @@ class StyleManager:
         if style_name in self._styles_cache:
             del self._styles_cache[style_name]
         return self.load_style(style_name)
+    
+    def apply_button_style(self, button, button_type: str = "primary"):
+        """
+        Aplica estilo específico para botões
+        
+        Args:
+            button: QPushButton
+            button_type: Tipo do botão (primary, secondary, success, icon)
+        """
+        style_manager.apply_style(button, "buttons" if button_type != "icon" else "images")
+        if button_type != "default":
+            button.setProperty("class", f"{button_type}-button")
+            # Força a atualização do estilo
+            button.style().unpolish(button)
+            button.style().polish(button)
 
 # Instância global do gerenciador de estilos
 style_manager = StyleManager()
@@ -140,16 +161,5 @@ def apply_style(widget, style_name: str, css_class: str = ""):
     style_manager.apply_style(widget, style_name, css_class)
 
 def apply_button_style(button, button_type: str = "primary"):
-    """
-    Aplica estilo específico para botões
-    
-    Args:
-        button: QPushButton
-        button_type: Tipo do botão (primary, secondary, success)
-    """
-    style_manager.apply_style(button, "buttons")
-    if button_type != "default":
-        button.setProperty("class", f"{button_type}-button")
-        # Força a atualização do estilo
-        button.style().unpolish(button)
-        button.style().polish(button)
+    """Função de conveniência para aplicar um estilo de botão"""
+    style_manager.apply_button_style(button, button_type)
