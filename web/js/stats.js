@@ -20,6 +20,40 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(async data => {
             const item = data.Response;
             let perksContent = '';
+
+            // Fetch damage type definition
+            let damageTypeInfo = '';
+            if (item.damageTypeHashes && item.damageTypeHashes.length > 0) {
+                const damageTypeHash = item.damageTypeHashes[0];
+                const damageTypeApiUrl = `https://www.bungie.net/Platform/Destiny2/Manifest/DestinyDamageTypeDefinition/${damageTypeHash}/`;
+                const damageTypeResponse = await fetch(damageTypeApiUrl, { headers: { 'X-API-Key': apiKey } });
+                const damageTypeData = await damageTypeResponse.json();
+                const damageType = damageTypeData.Response;
+                damageTypeInfo = `
+                    <div class="weapon-detail">
+                        <img src="https://www.bungie.net${damageType.displayProperties.icon}" alt="${damageType.displayProperties.name}" style="width: 30px; height: 30px;">
+                        <span>${damageType.displayProperties.name}</span>
+                    </div>
+                `;
+            }
+
+            // Fetch collectible definition for source information
+            let sourceInfo = '';
+            if (item.collectibleHash) {
+                const collectibleApiUrl = `https://www.bungie.net/Platform/Destiny2/Manifest/DestinyCollectibleDefinition/${item.collectibleHash}/`;
+                const collectibleResponse = await fetch(collectibleApiUrl, { headers: { 'X-API-Key': apiKey } });
+                const collectibleData = await collectibleResponse.json();
+                const collectible = collectibleData.Response;
+                sourceInfo = collectible.sourceString;
+            }
+
+            const ammoTypes = {
+                1: 'Primary',
+                2: 'Special',
+                3: 'Heavy'
+            };
+            const ammoType = ammoTypes[item.equippingBlock.ammoType];
+
             if (item.sockets && item.sockets.socketEntries) {
                 const perkSocketIndexes = item.sockets.socketEntries.map((socket, index) => socket.randomizedPlugSetHash ? index : -1).filter(index => index !== -1);
                 const perkSocketCategory = item.sockets.socketCategories.find(category => category.socketIndexes.some(index => perkSocketIndexes.includes(index)));
@@ -59,6 +93,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             <img src="https://www.bungie.net${item.displayProperties.icon}" alt="${item.displayProperties.name}">
                             <div class="weapon-info">
                                 <h1>${item.displayProperties.name}</h1>
+                                <div class="weapon-details">
+                                    ${damageTypeInfo}
+                                    <div class="weapon-detail">
+                                        <span>${item.itemTypeDisplayName}</span>
+                                    </div>
+                                    <div class="weapon-detail">
+                                        <span>${ammoType}</span>
+                                    </div>
+                                    <div class="weapon-detail">
+                                        <span>${sourceInfo}</span>
+                                    </div>
+                                </div>
                                 <h2>Perks</h2>
                             </div>
                         </div>
