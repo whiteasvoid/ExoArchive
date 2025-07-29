@@ -7,7 +7,7 @@ const openNavSidebar = document.getElementById('open-nav-sidebar');
 const closeNavSidebar = document.getElementById('close-nav-sidebar');
 
 // Replace with your API key
-const apiKey = '62af834bf86c4c7bacc5f1473a0149b3';
+const apiKey = '4f216a8359d4433186119caf10f09148';
 
 // This is a placeholder for the API endpoint.
 const apiUrl = 'https://www.bungie.net/Platform/Destiny2/Manifest/';
@@ -38,7 +38,6 @@ function calculateItemsToDisplay() {
 
 // Function to open the right sidebar and display item details in tabs
 function openSidebar(item) {
-    console.log(JSON.stringify(item, null, 2));
     sidebar.style.width = '350px';
     document.getElementById('item-name').textContent = item.displayProperties.name;
 
@@ -118,6 +117,7 @@ if (openNavSidebar && closeNavSidebar && closeSidebar) {
 }
 
 let allItems = {};
+let sortedItems = [];
 let itemsToDisplay = calculateItemsToDisplay();
 let displayedItemsCount = 0; // Track total displayed items across all loads
 let filteredItemsIndices = []; // Store indices of items that pass the filter
@@ -198,10 +198,8 @@ function passesFilter(item, searchTerm, itemType) {
 }
 
 // Function to filter and append items
-function appendItems(startFilteredIndex, itemsToAdd) {
-    const itemsArray = Object.values(allItems);
+function appendItems(itemsArray, startFilteredIndex, itemsToAdd) {
     let displayedCount = 0;
-    let sampleItems = []; // For debugging: track up to 5 items
 
     for (let i = startFilteredIndex; i < filteredItemsIndices.length && displayedCount < itemsToAdd; i++) {
         const item = itemsArray[filteredItemsIndices[i]];
@@ -216,11 +214,7 @@ function appendItems(startFilteredIndex, itemsToAdd) {
         gridContainer.appendChild(gridItem);
         displayedCount++;
         displayedItemsCount++;
-        if (sampleItems.length < 5) {
-            sampleItems.push(item.displayProperties.name + ' (' + item.itemTypeDisplayName + ')');
-        }
     }
-
 }
 
 // Function to filter and display items (used for initial load and filter changes)
@@ -233,17 +227,16 @@ function filterItems() {
     const searchTerm = document.getElementById('search-bar').value.toLowerCase();
     const itemType = document.getElementById('item-type-filter').value;
 
-    let itemsArray = Object.values(allItems);
-    itemsArray.sort((a, b) => a.displayProperties.name.localeCompare(b.displayProperties.name));
+    sortedItems = Object.values(allItems).sort((a, b) => a.displayProperties.name.localeCompare(b.displayProperties.name));
 
     // Build filtered indices
-    for (let i = 0; i < itemsArray.length; i++) {
-        if (passesFilter(itemsArray[i], searchTerm, itemType)) {
+    for (let i = 0; i < sortedItems.length; i++) {
+        if (passesFilter(sortedItems[i], searchTerm, itemType)) {
             filteredItemsIndices.push(i);
         }
     }
 
-    appendItems(0, itemsToDisplay);
+    appendItems(sortedItems, 0, itemsToDisplay);
 }
 
 // Debounce function for search input
@@ -272,7 +265,7 @@ window.addEventListener('scroll', () => {
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
         isLoadingMore = true;
         const itemsToAdd = calculateItemsToDisplay();
-        appendItems(displayedItemsCount, itemsToAdd);
+        appendItems(sortedItems, displayedItemsCount, itemsToAdd);
         itemsToDisplay += itemsToAdd;
         setTimeout(() => { isLoadingMore = false; }, 500); // Throttle to 500ms
     }
