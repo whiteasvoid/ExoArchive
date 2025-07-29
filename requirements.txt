@@ -1,5 +1,0 @@
-requests
-requests-mock
-PyQt5
-python-dotenv
-cryptography

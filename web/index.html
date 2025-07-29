@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Destiny 2 Item Explorer</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <button id="open-nav-sidebar">☰</button>
+        <div id="nav-sidebar" class="nav-sidebar">
+            <button id="close-nav-sidebar">✖</button>
+            <h2>Navigation</h2>
+            <p>Explore Destiny 2 items using the filters below.</p>
+        </div>
+        <div class="controls-container">
+            <input type="text" id="search-bar" placeholder="Search items...">
+            <select id="item-type-filter">
+                <option value="">All</option>
+                <!-- Options will be dynamically populated -->
+            </select>
+        </div>
+        <div id="grid-container" class="grid-container"></div>
+        <div id="sidebar" class="sidebar">
+            <button id="close-sidebar">✖</button>
+            <div id="sidebar-content">
+                <h2 id="item-name"></h2>
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="general">General</button>
+                    <button class="tab-button" data-tab="stats">Stats</button>
+                </div>
+                <div id="general-tab" class="tab-content active"></div>
+                <div id="stats-tab" class="tab-content"></div>
+            </div>
+        </div>
+    </div>
+    <script src="js/main.js"></script>
+</body>
+</html>
