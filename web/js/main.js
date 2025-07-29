@@ -7,7 +7,7 @@ const openNavSidebar = document.getElementById('open-nav-sidebar');
 const closeNavSidebar = document.getElementById('close-nav-sidebar');
 
 // Replace with your API key
-const apiKey = '4f216a8359d4433186119caf10f09148';
+const apiKey = '62af834bf86c4c7bacc5f1473a0149b3';
 
 // This is a placeholder for the API endpoint.
 const apiUrl = 'https://www.bungie.net/Platform/Destiny2/Manifest/';
@@ -38,6 +38,7 @@ function calculateItemsToDisplay() {
 
 // Function to open the right sidebar and display item details in tabs
 function openSidebar(item) {
+    console.log(JSON.stringify(item, null, 2));
     sidebar.style.width = '350px';
     document.getElementById('item-name').textContent = item.displayProperties.name;
 
@@ -47,8 +48,13 @@ function openSidebar(item) {
         <p><strong>Type:</strong> ${item.itemTypeDisplayName || 'N/A'}</p>
         <p><strong>Description:</strong> ${item.displayProperties.description || 'N/A'}</p>
         <p><strong>Icon:</strong> <img src="https://www.bungie.net${item.displayProperties.icon}" alt="${item.displayProperties.name}" style="width: 50px;"></p>
+        <button id="copy-json-button">Copy JSON</button>
     `;
     document.getElementById('general-tab').innerHTML = generalContent;
+
+    document.getElementById('copy-json-button').addEventListener('click', () => {
+        navigator.clipboard.writeText(JSON.stringify(item, null, 2));
+    });
 
     // Stats tab: Key stats only
     let statsContent = '<p>No stats available</p>';
@@ -58,8 +64,15 @@ function openSidebar(item) {
             const stat = item.stats.stats[statId];
             statsContent += `<p><strong>Stat ${statId}:</strong> ${stat.value}</p>`;
         }
+        statsContent += `<button id="explore-stats-button">Explore Stats</button>`;
     }
     document.getElementById('stats-tab').innerHTML = statsContent;
+
+    if (item.stats && item.stats.stats) {
+        document.getElementById('explore-stats-button').addEventListener('click', () => {
+            window.open(`stats.html?itemHash=${item.hash}`, '_blank');
+        });
+    }
 
     // Handle tab switching
     const tabs = document.querySelectorAll('.tab-button');
@@ -208,10 +221,6 @@ function appendItems(startFilteredIndex, itemsToAdd) {
         }
     }
 
-    // Debug: Log the number of items appended and filter settings
-    const searchTerm = document.getElementById('search-bar').value.toLowerCase();
-    const itemType = document.getElementById('item-type-filter').value;
-    console.log(`Appended ${displayedCount} items starting from filtered index ${startFilteredIndex}. Total displayed: ${displayedItemsCount} out of ${itemsToDisplay} requested. Total filtered items: ${filteredItemsIndices.length}. Filters: search="${searchTerm}", type="${itemType}". Sample items: ${sampleItems.join(', ')}`);
 }
 
 // Function to filter and display items (used for initial load and filter changes)
