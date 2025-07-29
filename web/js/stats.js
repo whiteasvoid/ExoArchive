@@ -21,12 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = data.Response;
             let perksContent = '';
             if (item.sockets && item.sockets.socketEntries) {
-                const socketCategoryUrl = `https://www.bungie.net/Platform/Destiny2/Manifest/DestinySocketCategoryDefinition/${item.sockets.socketCategories[1].socketCategoryHash}/`;
-                const socketCategoryResponse = await fetch(socketCategoryUrl, { headers: { 'X-API-Key': apiKey } });
-                const socketCategoryData = await socketCategoryResponse.json();
-                const perkCategoryHashes = socketCategoryData.Response.socketIndexes;
-
-                const perkPromises = perkCategoryHashes.map(async (socketIndex) => {
+                const perkSocketIndexes = item.sockets.socketEntries.map((socket, index) => socket.randomizedPlugSetHash ? index : -1).filter(index => index !== -1);
+                const perkSocketCategory = item.sockets.socketCategories.find(category => category.socketIndexes.some(index => perkSocketIndexes.includes(index)));
+                if (perkSocketCategory) {
+                    const perkCategoryHashes = perkSocketCategory.socketIndexes;
+                    const perkPromises = perkCategoryHashes.map(async (socketIndex) => {
                     const socket = item.sockets.socketEntries[socketIndex];
                     if (socket.randomizedPlugSetHash) {
                         const plugSetApiUrl = `https://www.bungie.net/Platform/Destiny2/Manifest/DestinyPlugSetDefinition/${socket.randomizedPlugSetHash}/`;
@@ -92,6 +91,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     });
                 });
+                } else {
+                    contentContainer.innerHTML = `
+                        <div class="weapon-header">
+                            <img src="https://www.bungie.net${item.displayProperties.icon}" alt="${item.displayProperties.name}">
+                            <div class="weapon-info">
+                                <h1>${item.displayProperties.name}</h1>
+                                <h2>Perks</h2>
+                            </div>
+                        </div>
+                        <p>No perks available for this item.</p>
+                    `;
+                    loadingIndicator.style.display = 'none';
+                    contentContainer.style.display = 'block';
+                }
             } else {
                 contentContainer.innerHTML = `
                     <div class="weapon-header">
