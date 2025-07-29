@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 Promise.all(perkPromises).then(perkColumns => {
-                    perksContent = perkColumns.map(column => `<div class="perk-column">${column.join('')}</div>`).join('');
+                    perksContent = perkColumns.filter(column => column.length > 0).map(column => `<div class="perk-column">${column.join('')}</div>`).join('');
                     contentContainer.innerHTML = `
                         <div class="weapon-header">
                             <img src="https://www.bungie.net${item.displayProperties.icon}" alt="${item.displayProperties.name}">
