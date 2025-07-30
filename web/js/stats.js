@@ -77,12 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const ammoTypes = {
-                1: 'Primary',
-                2: 'Special',
-                3: 'Heavy'
+                1: { name: 'Primary', icon: 'images/ammo-primary.svg' },
+                2: { name: 'Special', icon: 'images/ammo-special.svg' },
+                3: { name: 'Heavy', icon: 'images/ammo-heavy.svg' }
             };
-            const ammoType = ammoTypes[item.equippingBlock.ammoType];
-            debug.data('Ammo Type', ammoType);
+            const ammoTypeDetails = ammoTypes[item.equippingBlock.ammoType];
+            debug.data('Ammo Type', ammoTypeDetails.name);
 
             // Fetch and display stats
             let statsContent = '';
@@ -174,7 +174,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                             <span>${item.itemTypeDisplayName}</span>
                                         </div>
                                         <div class="weapon-detail">
-                                            <span>${ammoType}</span>
+                                            <img src="${ammoTypeDetails.icon}" alt="${ammoTypeDetails.name}" style="width: 30px; height: 30px;">
+                                            <span>${ammoTypeDetails.name}</span>
                                         </div>
                                         <div class="weapon-detail">
                                             <span>${sourceInfo}</span>
