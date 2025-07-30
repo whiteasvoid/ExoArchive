@@ -173,14 +173,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Function to check if an item passes the filter criteria
-    function passesFilter(item, searchTerm, itemType) {
+    function passesFilter(item, hashKey, searchTerm, itemType) {
         const displayName = item.displayProperties && item.displayProperties.name ? item.displayProperties.name.toLowerCase() : '';
         const displayIcon = item.displayProperties && item.displayProperties.icon ? item.displayProperties.icon : null;
         const itemTypeName = item.itemTypeDisplayName ? item.itemTypeDisplayName : '';
+        const itemHash = (item.hash !== undefined && item.hash !== null) ? String(item.hash).trim() : '';
+        const keyHash = hashKey ? String(hashKey).trim() : '';
 
-        // Search term filter
-        if (searchTerm && !displayName.includes(searchTerm.toLowerCase())) {
-            return false;
+        // Debug: log hash comparison if searching by hash
+        if (searchTerm && !isNaN(searchTerm.trim())) {
+            debug.data('Comparing search', {search: searchTerm.trim(), itemHash, keyHash, displayName});
+        }
+
+        // Search term filter (match name or hash)
+        if (searchTerm) {
+            const trimmedSearch = searchTerm.trim();
+            const lowerSearch = trimmedSearch.toLowerCase();
+            // Match name (case-insensitive) or hash (loose comparison to key or property)
+            if (!displayName.includes(lowerSearch) && itemHash != trimmedSearch && keyHash != trimmedSearch) {
+                return false;
+            }
         }
 
         // Item type filter: exact match with itemTypeDisplayName
@@ -196,7 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let displayedCount = 0;
         debug.info(`Appending ${itemsToAdd} items starting from filtered index ${startFilteredIndex}.`);
         for (let i = startFilteredIndex; i < filteredItemsIndices.length && displayedCount < itemsToAdd; i++) {
-            const item = itemsArray[filteredItemsIndices[i]];
+            const itemObj = itemsArray[filteredItemsIndices[i]];
+            const item = itemObj.value;
             const gridItem = document.createElement('div');
             gridItem.classList.add('grid-item');
             gridItem.innerHTML = `<img src="https://www.bungie.net${item.displayProperties.icon}" alt="${item.displayProperties.name}">`;
@@ -217,18 +230,25 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredItemsIndices = []; // Reset filtered indices
         itemsToDisplay = calculateItemsToDisplay();
 
-        const searchTerm = document.getElementById('search-bar').value.toLowerCase();
+        const searchTerm = document.getElementById('search-bar').value;
         const itemType = document.getElementById('item-type-filter').value;
 
-        sortedItems = Object.values(allItems).sort((a, b) => a.displayProperties.name.localeCompare(b.displayProperties.name));
+        // When building sortedItems, store both key and value
+        sortedItems = Object.entries(allItems)
+            .map(([key, value]) => ({ key, value }))
+            .sort((a, b) => (a.value.displayProperties.name || '').localeCompare(b.value.displayProperties.name || ''));
+
+        debug.data('Total items in allItems', Object.keys(allItems).length);
 
         // Build filtered indices
+        filteredItemsIndices = [];
         for (let i = 0; i < sortedItems.length; i++) {
-            if (passesFilter(sortedItems[i], searchTerm, itemType)) {
+            if (passesFilter(sortedItems[i].value, sortedItems[i].key, searchTerm, itemType)) {
                 filteredItemsIndices.push(i);
             }
         }
 
+        debug.data('Filtered items count', filteredItemsIndices.length);
         debug.info(`Filtering items: searchTerm='${searchTerm}', itemType='${itemType}'`);
         debug.data('Filtered item indices', filteredItemsIndices);
         appendItems(sortedItems, 0, itemsToDisplay);

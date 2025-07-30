@@ -84,6 +84,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const ammoType = ammoTypes[item.equippingBlock.ammoType];
             debug.data('Ammo Type', ammoType);
 
+            // Fetch and display stats
+            let statsContent = '';
+            if (item.stats && item.stats.stats) {
+                const statHashes = Object.keys(item.stats.stats);
+                const statDefinitions = await Promise.all(statHashes.map(statHash =>
+                    fetch(`https://www.bungie.net/Platform/Destiny2/Manifest/DestinyStatDefinition/${statHash}/`, {
+                        headers: { 'X-API-Key': apiKey }
+                    }).then(res => res.json())
+                ));
+
+                statsContent = '<div class="stats-container">';
+                for (const statDefResponse of statDefinitions) {
+                    const statDef = statDefResponse.Response;
+                    const statValue = item.stats.stats[statDef.hash].value;
+                    statsContent += `
+                        <div class="stat-bar-container">
+                            <div class="stat-name">${statDef.displayProperties.name}</div>
+                            <div class="stat-bar">
+                                <div class="stat-bar-fill" style="width: ${statValue}%"></div>
+                            </div>
+                            <div class="stat-value">${statValue}</div>
+                        </div>
+                    `;
+                }
+                statsContent += '</div>';
+            }
+
+
             if (item.sockets && item.sockets.socketEntries) {
                 debug.info('Processing item sockets for perks...');
                 const perkSocketIndexes = item.sockets.socketEntries.map((socket, index) => socket.randomizedPlugSetHash ? index : -1).filter(index => index !== -1);
@@ -152,10 +180,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                             <span>${sourceInfo}</span>
                                         </div>
                                     </div>
-                                    <h2>Perks</h2>
+                                    <h2>Stats</h2>
+                                    ${statsContent}
                                 </div>
                             </div>
-                            <div class="perks-container">${perksContent}</div>
+                            <div class="perks-container">
+                                <h2>Perks</h2>
+                                <div class="perk-columns">${perksContent}</div>
+                            </div>
                         `;
 
                         loadingIndicator.style.display = 'none';
