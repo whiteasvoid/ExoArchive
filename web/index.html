@@ -10,10 +10,12 @@
     <div class="container">
         <div class="controls-container">
             <input type="text" id="search-bar" placeholder="Search items...">
-            <select id="item-type-filter" class="styled-select">
-                <option value="">All</option>
-                <!-- Options will be dynamically populated -->
-            </select>
+            <div class="dropdown">
+                <button class="dropdown-button">Filters</button>
+                <div class="dropdown-content">
+                    <!-- Filters will be dynamically populated here -->
+                </div>
+            </div>
         </div>
         <div id="grid-container" class="grid-container"></div>
         <div id="sidebar" class="sidebar">

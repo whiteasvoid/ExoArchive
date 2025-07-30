@@ -116,88 +116,136 @@ document.addEventListener('DOMContentLoaded', () => {
     let displayedItemsCount = 0; // Track total displayed items across all loads
     let filteredItemsIndices = []; // Store indices of items that pass the filter
 
-    // Function to populate the item type dropdown with grouped options
-    function populateItemTypeFilter(items) {
-        const itemTypeFilter = document.getElementById('item-type-filter');
-        const itemTypes = new Set();
-        const categories = {
-            Weapons: [],
-            Armor: [],
-            Abilities: [],
-            Other: []
-        };
+    const validWeaponTypes = [
+        "Auto Rifle",
+        "Pulse Rifle",
+        "Scout Rifle",
+        "Hand Cannon",
+        "Submachine Gun",
+        "Sidearm",
+        "Bow",
+        "Shotgun",
+        "Sniper Rifle",
+        "Fusion Rifle",
+        "Trace Rifle",
+        "Grenade Launcher",
+        "Rocket Launcher",
+        "Machine Gun",
+        "Sword",
+        "Linear Fusion Rifle",
+        "Glaive"
+    ];
 
-        // Collect unique itemTypeDisplayName values
+    function populateFilterMenu(items, damageTypeDefinitions) {
+        const filterContainer = document.querySelector('.dropdown-content');
+        const weaponTypes = new Set();
+        const damageTypes = new Set();
+
         Object.values(items).forEach(item => {
             if (item.itemTypeDisplayName) {
-                itemTypes.add(item.itemTypeDisplayName);
+                let weaponType = item.itemTypeDisplayName.replace('Exotic ', '').replace('Legendary ', '');
+                if (validWeaponTypes.includes(weaponType)) {
+                    weaponTypes.add(weaponType);
+
+                    if (item.damageTypeHashes && item.damageTypeHashes.length > 0) {
+                        item.damageTypeHashes.forEach(hash => {
+                            const damageType = damageTypeDefinitions[hash];
+                            if (damageType) {
+                                damageTypes.add(damageType.displayProperties.name);
+                            }
+                        });
+                    } else {
+                        damageTypes.add('Kinetic');
+                    }
+                }
             }
         });
 
-        // Sort and categorize item types
-        Array.from(itemTypes).sort().forEach(type => {
-            if (type.toLowerCase().includes('weapon') || type.toLowerCase().includes('ornament')) {
-                categories.Weapons.push(type);
-            } else if (type.toLowerCase().includes('armor')) {
-                categories.Armor.push(type);
-            } else if (type.toLowerCase().includes('ability') || type.toLowerCase().includes('aspect') || type.toLowerCase().includes('grenade') || type.toLowerCase().includes('melee') || type.toLowerCase().includes('super') || type.toLowerCase().includes('class')) {
-                categories.Abilities.push(type);
-            } else {
-                categories.Other.push(type);
-            }
-        });
+        const filterHtml = `
+            <div class="filter-category">
+                <a href="#">Ammo Type</a>
+                <div class="dropdown-submenu">
+                    <label><input type="checkbox" name="ammoType" value="1"> Primary</label>
+                    <label><input type="checkbox" name="ammoType" value="2"> Special</label>
+                    <label><input type="checkbox" name="ammoType" value="3"> Heavy</label>
+                </div>
+            </div>
+            <div class="filter-category">
+                <a href="#">Damage Type</a>
+                <div class="dropdown-submenu">
+                    ${Array.from(damageTypes).sort().map(type => `<label><input type="checkbox" name="damageType" value="${type}"> ${type}</label>`).join('')}
+                </div>
+            </div>
+            <div class="filter-category">
+                <a href="#">Weapon Type</a>
+                <div class="dropdown-submenu">
+                    ${Array.from(weaponTypes).sort().map(type => `<label><input type="checkbox" name="weaponType" value="${type}"> ${type}</label>`).join('')}
+                </div>
+            </div>
+        `;
 
-        // Log categories for debugging
-        console.log('Populated item type dropdown with categories:', {
-            Weapons: categories.Weapons,
-            Armor: categories.Armor,
-            Abilities: categories.Abilities,
-            Other: categories.Other
-        });
-
-        // Populate dropdown with optgroups
-        itemTypeFilter.innerHTML = '<option value="">All</option>';
-        for (const [category, types] of Object.entries(categories)) {
-            if (types.length > 0) {
-                const optgroup = document.createElement('optgroup');
-                optgroup.label = category;
-                types.forEach(type => {
-                    const option = document.createElement('option');
-                    option.value = type;
-                    option.textContent = type;
-                    optgroup.appendChild(option);
-                });
-                itemTypeFilter.appendChild(optgroup);
-            }
-        }
+        filterContainer.innerHTML = filterHtml;
     }
 
     // Function to check if an item passes the filter criteria
-    function passesFilter(item, hashKey, searchTerm, itemType) {
+    function passesFilter(item, hashKey, searchTerm, filters, damageTypeDefinitions) {
         const displayName = item.displayProperties && item.displayProperties.name ? item.displayProperties.name.toLowerCase() : '';
         const displayIcon = item.displayProperties && item.displayProperties.icon ? item.displayProperties.icon : null;
         const itemTypeName = item.itemTypeDisplayName ? item.itemTypeDisplayName : '';
         const itemHash = (item.hash !== undefined && item.hash !== null) ? String(item.hash).trim() : '';
         const keyHash = hashKey ? String(hashKey).trim() : '';
 
-        // Debug: log hash comparison if searching by hash
-        if (searchTerm && !isNaN(searchTerm.trim())) {
-            debug.data('Comparing search', {search: searchTerm.trim(), itemHash, keyHash, displayName});
-        }
-
-        // Search term filter (match name or hash)
+        // Search term filter
         if (searchTerm) {
             const trimmedSearch = searchTerm.trim();
             const lowerSearch = trimmedSearch.toLowerCase();
-            // Match name (case-insensitive) or hash (loose comparison to key or property)
             if (!displayName.includes(lowerSearch) && itemHash != trimmedSearch && keyHash != trimmedSearch) {
                 return false;
             }
         }
 
-        // Item type filter: exact match with itemTypeDisplayName
-        if (itemType && itemTypeName !== itemType) {
-            return false;
+        // Ammo type filter
+        if (filters.ammoType.length > 0) {
+            if (!item.equippingBlock || !filters.ammoType.includes(String(item.equippingBlock.ammoType))) {
+                return false;
+            }
+        }
+
+        // Damage type filter
+        if (filters.damageType.length > 0) {
+            let itemDamageTypes = [];
+            if (item.itemTypeDisplayName && validWeaponTypes.includes(item.itemTypeDisplayName.replace('Exotic ', '').replace('Legendary ', ''))) {
+                if (item.damageTypeHashes && item.damageTypeHashes.length > 0) {
+                    item.damageTypeHashes.forEach(hash => {
+                        const damageType = damageTypeDefinitions[hash];
+                        if (damageType) {
+                            itemDamageTypes.push(damageType.displayProperties.name);
+                        }
+                    });
+                } else {
+                    itemDamageTypes.push('Kinetic');
+                }
+            }
+            
+            debug.data('Item Damage Types', {name: displayName, types: itemDamageTypes});
+
+            if (itemDamageTypes.length === 0) {
+                return false;
+            }
+            if (!filters.damageType.some(type => itemDamageTypes.includes(type))) {
+                return false;
+            }
+        }
+
+        // Weapon type filter
+        if (filters.weaponType.length > 0) {
+            if (!item.itemTypeDisplayName) {
+                return false;
+            }
+            let weaponType = item.itemTypeDisplayName.replace('Exotic ', '').replace('Legendary ', '');
+            if (!filters.weaponType.includes(weaponType)) {
+                return false;
+            }
         }
 
         return !!displayIcon; // Ensure item has an icon
@@ -223,36 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
         debug.success(`Appended ${displayedCount} items to grid.`);
     }
 
-    // Function to filter and display items (used for initial load and filter changes)
-    function filterItems() {
-        gridContainer.innerHTML = ''; // Clear the grid for initial load or filter change
-        displayedItemsCount = 0; // Reset displayed count
-        filteredItemsIndices = []; // Reset filtered indices
-        itemsToDisplay = calculateItemsToDisplay();
-
-        const searchTerm = document.getElementById('search-bar').value;
-        const itemType = document.getElementById('item-type-filter').value;
-
-        // When building sortedItems, store both key and value
-        sortedItems = Object.entries(allItems)
-            .map(([key, value]) => ({ key, value }))
-            .sort((a, b) => (a.value.displayProperties.name || '').localeCompare(b.value.displayProperties.name || ''));
-
-        debug.data('Total items in allItems', Object.keys(allItems).length);
-
-        // Build filtered indices
-        filteredItemsIndices = [];
-        for (let i = 0; i < sortedItems.length; i++) {
-            if (passesFilter(sortedItems[i].value, sortedItems[i].key, searchTerm, itemType)) {
-                filteredItemsIndices.push(i);
-            }
-        }
-
-        debug.data('Filtered items count', filteredItemsIndices.length);
-        debug.info(`Filtering items: searchTerm='${searchTerm}', itemType='${itemType}'`);
-        debug.data('Filtered item indices', filteredItemsIndices);
-        appendItems(sortedItems, 0, itemsToDisplay);
-    }
 
     // Debounce function for search input
     function debounce(func, wait) {
@@ -267,11 +285,21 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    const debouncedFilterItems = debounce(filterItems, 300);
 
-    // Add event listeners
-    document.getElementById('search-bar').addEventListener('input', debouncedFilterItems);
-    document.getElementById('item-type-filter').addEventListener('change', filterItems);
+    const dropdownButton = document.querySelector('.dropdown-button');
+    const dropdownContent = document.querySelector('.dropdown-content');
+
+    dropdownButton.addEventListener('click', () => {
+        dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.querySelectorAll('.filter-category > a').forEach(a => {
+        a.addEventListener('click', (event) => {
+            event.preventDefault();
+            const submenu = event.target.nextElementSibling;
+            submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+        });
+    });
 
     // Infinite scroll with throttling
     let isLoadingMore = false;
@@ -287,18 +315,61 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Fetch the manifest and display the data
-    fetchData(apiUrl).then(data => {
+    fetchData(apiUrl).then(async data => {
         debug.success('Fetched manifest data.');
         const itemDefinitionUrl = data.Response.jsonWorldComponentContentPaths.en.DestinyInventoryItemDefinition;
+        const damageTypeDefinitionUrl = data.Response.jsonWorldComponentContentPaths.en.DestinyDamageTypeDefinition;
         debug.data('Item Definition URL', itemDefinitionUrl);
-        fetch('https://www.bungie.net' + itemDefinitionUrl)
-            .then(response => response.json())
-            .then(itemData => {
-                debug.success('Fetched DestinyInventoryItemDefinition data.');
-                allItems = itemData;
-                populateItemTypeFilter(allItems); // Populate dropdown after data is loaded
-                filterItems(); // Initial display
-            })
-            .catch(err => debug.error('Error fetching DestinyInventoryItemDefinition:', err));
+        debug.data('Damage Type Definition URL', damageTypeDefinitionUrl);
+
+        const [itemData, damageTypeData] = await Promise.all([
+            fetch('https://www.bungie.net' + itemDefinitionUrl).then(res => res.json()),
+            fetch('https://www.bungie.net' + damageTypeDefinitionUrl).then(res => res.json())
+        ]);
+
+        debug.success('Fetched DestinyInventoryItemDefinition and DestinyDamageTypeDefinition data.');
+        allItems = itemData;
+        const damageTypeDefinitions = damageTypeData;
+        populateFilterMenu(allItems, damageTypeDefinitions); // Populate dropdown after data is loaded
+        
+        function filterItems() {
+            gridContainer.innerHTML = ''; // Clear the grid for initial load or filter change
+            displayedItemsCount = 0; // Reset displayed count
+            filteredItemsIndices = []; // Reset filtered indices
+            itemsToDisplay = calculateItemsToDisplay();
+
+            const searchTerm = document.getElementById('search-bar').value;
+            const filters = {
+                ammoType: Array.from(document.querySelectorAll('input[name="ammoType"]:checked')).map(el => el.value),
+                damageType: Array.from(document.querySelectorAll('input[name="damageType"]:checked')).map(el => el.value),
+                weaponType: Array.from(document.querySelectorAll('input[name="weaponType"]:checked')).map(el => el.value)
+            };
+
+            // When building sortedItems, store both key and value
+            sortedItems = Object.entries(allItems)
+                .map(([key, value]) => ({ key, value }))
+                .sort((a, b) => (a.value.displayProperties.name || '').localeCompare(b.value.displayProperties.name || ''));
+
+            debug.data('Total items in allItems', Object.keys(allItems).length);
+
+            // Build filtered indices
+            filteredItemsIndices = [];
+            for (let i = 0; i < sortedItems.length; i++) {
+                if (passesFilter(sortedItems[i].value, sortedItems[i].key, searchTerm, filters, damageTypeDefinitions)) {
+                    filteredItemsIndices.push(i);
+                }
+            }
+
+            debug.data('Filtered items count', filteredItemsIndices.length);
+            debug.info(`Filtering items: searchTerm='${searchTerm}', filters:`, filters);
+            debug.data('Filtered item indices', filteredItemsIndices);
+            appendItems(sortedItems, 0, itemsToDisplay);
+        }
+
+        filterItems(); // Initial display
+
+        const debouncedFilterItems = debounce(filterItems, 300);
+        document.getElementById('search-bar').addEventListener('input', debouncedFilterItems);
+        document.querySelector('.dropdown-content').addEventListener('change', filterItems);
     }).catch(err => debug.error('Error fetching manifest:', err));
 });
