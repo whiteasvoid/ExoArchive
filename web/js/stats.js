@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(async data => {
             debug.data('Item API response', data);
             const item = data.Response;
+            document.title = `Inspecting ${item.displayProperties.name}`;
             let perksContent = '';
 
             // Fetch damage type definition
@@ -95,7 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 ));
 
                 statsContent = '<div class="stats-container">';
-                for (const statDefResponse of statDefinitions) {
+                const filteredStatDefinitions = statDefinitions.filter(statDefResponse => {
+                    const statDef = statDefResponse.Response;
+                    const statName = statDef.displayProperties.name;
+                    return statName && statName !== 'Attack' && statName !== 'Power';
+                });
+
+                for (const statDefResponse of filteredStatDefinitions) {
                     const statDef = statDefResponse.Response;
                     const statValue = item.stats.stats[statDef.hash].value;
                     statsContent += `
