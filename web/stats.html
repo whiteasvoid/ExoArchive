@@ -8,12 +8,73 @@
 </head>
 <body class="stats-page">
     <div class="container">
-    <div class="loading-indicator"></div>
-    <div class="content-container" style="display: none;">
-        <h1>Explore Stats</h1>
-        <p>This page will display detailed item statistics.</p>
+        <div class="loading-indicator"></div>
+        <!-- This container holds the page content and is hidden until the data is loaded -->
+        <div class="content-container" style="display: none;">
+            <!-- The entire weapon details structure is now in the HTML, ready to be populated. -->
+            <div class="weapon-header">
+                <img data-template="weapon-icon" src="" alt="Weapon Icon">
+                <div class="weapon-info">
+                    <h1 data-template="weapon-name"></h1>
+                    <div class="weapon-details">
+                        <div class="weapon-detail damage-type-container">
+                            <img data-template="damage-icon" src="" alt="Damage Type" style="width: 30px; height: 30px;">
+                            <span data-template="damage-type"></span>
+                        </div>
+                        <div class="weapon-detail">
+                            <span data-template="weapon-type"></span>
+                        </div>
+                        <div class="weapon-detail">
+                            <img data-template="ammo-icon" src="" alt="Ammo Type" style="width: 30px; height: 30px;">
+                            <span data-template="ammo-type"></span>
+                        </div>
+                        <div class="weapon-detail">
+                            <span data-template="weapon-source"></span>
+                        </div>
+                    </div>
+                    <h2>Stats</h2>
+                    <div class="stats-container">
+                        <!-- Stat bars are populated here by stats.js -->
+                    </div>
+                </div>
+            </div>
+            <div class="perks-container">
+                <h2>Perks</h2>
+                <div class="perk-columns">
+                    <!-- Perk columns and icons are populated here by stats.js -->
+                </div>
+            </div>
+        </div>
+        <!-- This tooltip is used for perk descriptions on hover -->
+        <div class="perk-tooltip"></div>
     </div>
-    </div>
-    <script src="js/stats.js"></script>
+
+    <!-- Templates for dynamically generated content -->
+
+    <!-- Template for a single stat bar -->
+    <template id="stat-bar-template">
+        <div class="stat-bar-container">
+            <div class="stat-name"></div>
+            <div class="stat-bar">
+                <div class="stat-bar-fill"></div>
+            </div>
+            <div class="stat-value"></div>
+        </div>
+    </template>
+
+    <!-- Template for a column in the perks grid -->
+    <template id="perk-column-template">
+        <div class="perk-column"></div>
+    </template>
+    
+    <!-- Template for a single perk icon -->
+    <template id="perk-template">
+        <div class="perk" data-perk-name="" data-perk-description="">
+            <img src="" alt="">
+        </div>
+    </template>
+
+    <!-- Load stats.js as a module to allow import/export syntax -->
+    <script src="js/stats.js" type="module"></script>
 </body>
 </html>

@@ -9,30 +9,84 @@
 <body>
     <div class="container">
         <div class="controls-container">
-            <input type="text" id="search-bar" placeholder="Search items...">
+            <input type="text" id="search-bar" placeholder="Search items by name or hash...">
             <div class="dropdown">
                 <button class="dropdown-button">Filters</button>
                 <div class="dropdown-content">
-                    <!-- Filters will be dynamically populated here -->
+                    <!-- Filters are dynamically populated here by main.js -->
                 </div>
             </div>
         </div>
-        <div id="grid-container" class="grid-container"></div>
+        <div id="grid-container" class="grid-container">
+            <!-- Item grid is populated here by main.js -->
+        </div>
         <div id="sidebar" class="sidebar">
             <button id="close-sidebar">✖</button>
             <div id="sidebar-content">
-                <h2 id="item-name"></h2>
+                <h2 id="item-name"> <!-- Item name is populated here --> </h2>
                 <div class="tabs">
-                    <button class="tab-button active" data-tab="general">General</button>
+                    <button class="tab-button" data-tab="general">General</button>
                     <button class="tab-button" data-tab="stats">Stats</button>
                 </div>
-                <div id="general-tab" class="tab-content active"></div>
+                <div id="general-tab" class="tab-content"></div>
                 <div id="stats-tab" class="tab-content"></div>
-                <button id="copy-json" style="display: none;">Copy JSON</button>
-                <button id="explore-stats" style="display: none;">Explore Stats</button>
             </div>
         </div>
     </div>
-    <script src="js/main.js"></script>
+
+    <!-- 
+      Templates for dynamic content.
+      These are hidden by default and are cloned by JavaScript to create new elements.
+      This is more efficient and secure than building HTML strings in JavaScript.
+    -->
+
+    <!-- Template for each item in the main grid -->
+    <template id="item-template">
+        <div class="grid-item">
+            <img src="" alt="">
+        </div>
+    </template>
+
+    <!-- Template for the sidebar's "General" tab -->
+    <template id="sidebar-general-template">
+        <div class="sidebar-section">
+            <p><strong>Name:</strong> <span data-template="item-name"></span></p>
+            <p><strong>Type:</strong> <span data-template="item-type"></span></p>
+            <img data-template="item-icon" src="" alt="">
+            <p style="margin-top: 15px;"><strong>Description:</strong></p>
+            <p data-template="item-description"></p>
+            <button class="copy-json-button" style="margin-top: 15px;">Copy JSON</button>
+        </div>
+    </template>
+
+    <!-- Template for the sidebar's "Stats" tab -->
+    <template id="sidebar-stats-template">
+        <div class="sidebar-section">
+            <div class="stats-list">
+                <!-- Individual stats will be populated here -->
+            </div>
+            <button class="explore-stats-button" style="margin-top: 15px;">Explore Full Stats</button>
+        </div>
+    </template>
+    
+    <!-- Template for a filter category (e.g., "Weapon Type") in the dropdown -->
+    <template id="filter-category-template">
+        <div class="filter-category">
+            <a href="#"></a>
+            <div class="dropdown-submenu">
+                <!-- Checkboxes for this category will be populated here -->
+            </div>
+        </div>
+    </template>
+
+    <!-- Template for a single checkbox item within a filter category -->
+    <template id="filter-checkbox-template">
+        <label>
+            <input type="checkbox">
+        </label>
+    </template>
+
+    <!-- Load main.js as a module, which allows using import/export syntax. -->
+    <script src="js/main.js" type="module"></script>
 </body>
 </html>

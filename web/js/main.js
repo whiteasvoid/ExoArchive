@@ -1,3 +1,5 @@
+import { getManifest, getDefinitions } from './api.js';
+
 // Debug utility for styled console output
 const debug = {
     info: (msg, ...args) => console.log(`%c[INFO] %c${msg}`, 'color: #2196f3; font-weight: bold;', 'color: inherit;', ...args),
@@ -9,24 +11,8 @@ const debug = {
 
 debug.info('Main.js loaded.');
 
-// Replace with your API key
-const apiKey = '4f216a8359d4433186119caf10f09148';
-
-// This is a placeholder for the API endpoint.
-const apiUrl = 'https://www.bungie.net/Platform/Destiny2/Manifest/';
-debug.data('API URL', apiUrl);
-
-// Function to fetch data from the Bungie API
-async function fetchData(url) {
-    debug.info('Fetching data from API...', url);
-    const response = await fetch(url, {
-        headers: {
-            'X-API-Key': apiKey
-        }
-    });
-    debug.success('Received response from API.');
-    return response.json();
-}
+// The API key is now handled by the api.js module.
+// The old fetchData function is no longer needed and has been removed.
 
 document.addEventListener('DOMContentLoaded', () => {
     const gridContainer = document.getElementById('grid-container');
@@ -47,56 +33,67 @@ document.addEventListener('DOMContentLoaded', () => {
         return Math.max(columns * rows * 2.5, 50); // Load 2.5x viewport height, minimum 50 items
     }
 
-    // Function to open the right sidebar and display item details in tabs
+    /**
+     * Opens the sidebar and populates it with details for a specific item.
+     * Uses HTML templates to create the content, avoiding innerHTML for better performance and security.
+     * @param {object} item - The full data object for the item.
+     */
     function openSidebar(item) {
         sidebar.classList.add('open');
         document.getElementById('item-name').textContent = item.displayProperties.name;
 
-        // General tab: Essential item info
-        let generalContent = `
-            <p><strong>Name:</strong> ${item.displayProperties.name}</p>
-            <p><strong>Type:</strong> ${item.itemTypeDisplayName || 'N/A'}</p>
-            <p><strong>Description:</strong> ${item.displayProperties.description || 'N/A'}</p>
-            <p><strong>Icon:</strong> <img src="https://www.bungie.net${item.displayProperties.icon}" alt="${item.displayProperties.name}" style="width: 50px;"></p>
-            <button id="copy-json-button">Copy JSON</button>
-        `;
-        document.getElementById('general-tab').innerHTML = generalContent;
+        // --- General Tab ---
+        const generalTab = document.getElementById('general-tab');
+        generalTab.innerHTML = ''; // Clear previous content before appending new.
+        const generalContent = document.getElementById('sidebar-general-template').content.cloneNode(true);
+        generalContent.querySelector('[data-template="item-name"]').textContent = item.displayProperties.name;
+        generalContent.querySelector('[data-template="item-type"]').textContent = item.itemTypeDisplayName || 'N/A';
+        generalContent.querySelector('[data-template="item-description"]').innerHTML = item.displayProperties.description || 'N/A';
+        const icon = generalContent.querySelector('[data-template="item-icon"]');
+        icon.src = `https://www.bungie.net${item.displayProperties.icon}`;
+        icon.alt = item.displayProperties.name;
+        generalTab.appendChild(generalContent);
 
-        document.getElementById('copy-json-button').addEventListener('click', () => {
+        generalTab.querySelector('.copy-json-button').addEventListener('click', () => {
             navigator.clipboard.writeText(JSON.stringify(item, null, 2));
+            debug.success('Item JSON copied to clipboard.');
         });
 
-        // Stats tab: Key stats only
-        let statsContent = '<p>No stats available</p>';
+        // --- Stats Tab ---
+        const statsTab = document.getElementById('stats-tab');
+        statsTab.innerHTML = ''; // Clear previous content.
         if (item.stats && item.stats.stats) {
-            statsContent = '';
+            const statsContent = document.getElementById('sidebar-stats-template').content.cloneNode(true);
+            const statsList = statsContent.querySelector('.stats-list');
             for (const statId in item.stats.stats) {
                 const stat = item.stats.stats[statId];
-                statsContent += `<p><strong>Stat ${statId}:</strong> ${stat.value}</p>`;
+                const statItem = document.createElement('p');
+                statItem.innerHTML = `<strong>Stat ${statId}:</strong> ${stat.value}`;
+                statsList.appendChild(statItem);
             }
-            statsContent += `<button id="explore-stats-button">Explore Stats</button>`;
-        }
-        document.getElementById('stats-tab').innerHTML = statsContent;
+            statsTab.appendChild(statsContent);
 
-        if (item.stats && item.stats.stats) {
-            document.getElementById('explore-stats-button').addEventListener('click', () => {
+            statsTab.querySelector('.explore-stats-button').addEventListener('click', () => {
                 window.open(`stats.html?itemHash=${item.hash}`, '_blank');
             });
+        } else {
+            statsTab.innerHTML = '<p>No stats available for this item.</p>';
         }
 
-        // Handle tab switching
-        const tabs = document.querySelectorAll('.tab-button');
-        const tabContents = document.querySelectorAll('.tab-content');
+        // --- Tab Switching Logic ---
+        const tabs = sidebar.querySelectorAll('.tab-button');
+        const tabContents = sidebar.querySelectorAll('.tab-content');
         tabs.forEach(tab => {
-            tab.removeEventListener('click', tab.clickHandler); // Remove previous listeners
-            tab.clickHandler = () => {
+            tab.addEventListener('click', (e) => {
                 tabs.forEach(t => t.classList.remove('active'));
                 tabContents.forEach(c => c.classList.remove('active'));
-                tab.classList.add('active');
-                document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
-            };
-            tab.addEventListener('click', tab.clickHandler);
+                e.currentTarget.classList.add('active');
+                document.getElementById(`${e.currentTarget.dataset.tab}-tab`).classList.add('active');
+            });
         });
+        // Activate the first tab by default.
+        tabs[0].classList.add('active');
+        tabContents[0].classList.add('active');
     }
 
     // Function to close the right sidebar
@@ -136,55 +133,55 @@ document.addEventListener('DOMContentLoaded', () => {
         "Glaive"
     ];
 
+    /**
+     * Populates the filter dropdown menu based on available item properties.
+     * Creates filter options dynamically from the loaded item data using templates.
+     */
     function populateFilterMenu(items, damageTypeDefinitions) {
         const filterContainer = document.querySelector('.dropdown-content');
+        filterContainer.innerHTML = ''; // Clear existing filters to prevent duplication.
+
         const weaponTypes = new Set();
         const damageTypes = new Set();
 
         Object.values(items).forEach(item => {
-            if (item.itemTypeDisplayName) {
-                let weaponType = item.itemTypeDisplayName.replace('Exotic ', '').replace('Legendary ', '');
-                if (validWeaponTypes.includes(weaponType)) {
-                    weaponTypes.add(weaponType);
-
-                    if (item.damageTypeHashes && item.damageTypeHashes.length > 0) {
-                        item.damageTypeHashes.forEach(hash => {
-                            const damageType = damageTypeDefinitions[hash];
-                            if (damageType) {
-                                damageTypes.add(damageType.displayProperties.name);
-                            }
-                        });
-                    } else {
-                        damageTypes.add('Kinetic');
-                    }
+            const weaponType = (item.itemTypeDisplayName || '').replace(/Exotic |Legendary /g, '');
+            if (validWeaponTypes.includes(weaponType)) {
+                weaponTypes.add(weaponType);
+                if (item.damageTypeHashes?.length > 0) {
+                    item.damageTypeHashes.forEach(hash => {
+                        const damageType = damageTypeDefinitions[hash];
+                        if (damageType) damageTypes.add(damageType.displayProperties.name);
+                    });
+                } else {
+                    damageTypes.add('Kinetic'); // Default to Kinetic if no damage type is specified.
                 }
             }
         });
 
-        const filterHtml = `
-            <div class="filter-category">
-                <a href="#">Ammo Type</a>
-                <div class="dropdown-submenu">
-                    <label><input type="checkbox" name="ammoType" value="1"> Primary</label>
-                    <label><input type="checkbox" name="ammoType" value="2"> Special</label>
-                    <label><input type="checkbox" name="ammoType" value="3"> Heavy</label>
-                </div>
-            </div>
-            <div class="filter-category">
-                <a href="#">Damage Type</a>
-                <div class="dropdown-submenu">
-                    ${Array.from(damageTypes).sort().map(type => `<label><input type="checkbox" name="damageType" value="${type}"> ${type}</label>`).join('')}
-                </div>
-            </div>
-            <div class="filter-category">
-                <a href="#">Weapon Type</a>
-                <div class="dropdown-submenu">
-                    ${Array.from(weaponTypes).sort().map(type => `<label><input type="checkbox" name="weaponType" value="${type}"> ${type}</label>`).join('')}
-                </div>
-            </div>
-        `;
-
-        filterContainer.innerHTML = filterHtml;
+        const createFilterCategory = (title, name, values) => {
+            const category = document.getElementById('filter-category-template').content.cloneNode(true);
+            category.querySelector('a').textContent = title;
+            const submenu = category.querySelector('.dropdown-submenu');
+            values.forEach(value => {
+                const checkboxItem = document.getElementById('filter-checkbox-template').content.cloneNode(true);
+                const label = checkboxItem.querySelector('label');
+                const input = checkboxItem.querySelector('input');
+                input.name = name;
+                input.value = value.value ?? value;
+                label.append(` ${value.label ?? value}`);
+                submenu.appendChild(checkboxItem);
+            });
+            filterContainer.appendChild(category);
+        };
+        
+        createFilterCategory('Ammo Type', 'ammoType', [
+            { label: 'Primary', value: 1 },
+            { label: 'Special', value: 2 },
+            { label: 'Heavy', value: 3 }
+        ]);
+        createFilterCategory('Damage Type', 'damageType', Array.from(damageTypes).sort());
+        createFilterCategory('Weapon Type', 'weaponType', Array.from(weaponTypes).sort());
     }
 
     // Function to check if an item passes the filter criteria
@@ -251,24 +248,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return !!displayIcon; // Ensure item has an icon
     }
 
-    // Function to filter and append items
-    function appendItems(itemsArray, startFilteredIndex, itemsToAdd) {
-        let displayedCount = 0;
-        debug.info(`Appending ${itemsToAdd} items starting from filtered index ${startFilteredIndex}.`);
-        for (let i = startFilteredIndex; i < filteredItemsIndices.length && displayedCount < itemsToAdd; i++) {
+    /**
+     * Appends a specified number of items to the grid from the filtered list.
+     * Uses a document fragment to minimize DOM reflows for better performance.
+     * @param {Array} itemsArray - The sorted array of all items.
+     * @param {number} startFilteredIndex - The starting index in the `filteredItemsIndices` array.
+     * @param {number} itemsToAppend - The number of items to add to the grid.
+     */
+    function appendItems(itemsArray, startFilteredIndex, itemsToAppend) {
+        let appendedCount = 0;
+        const fragment = document.createDocumentFragment();
+
+        for (let i = startFilteredIndex; i < filteredItemsIndices.length && appendedCount < itemsToAppend; i++) {
             const itemObj = itemsArray[filteredItemsIndices[i]];
             const item = itemObj.value;
-            const gridItem = document.createElement('div');
-            gridItem.classList.add('grid-item');
-            gridItem.innerHTML = `<img src="https://www.bungie.net${item.displayProperties.icon}" alt="${item.displayProperties.name}">`;
-            gridItem.addEventListener('click', () => {
-                openSidebar(item);
-            });
-            gridContainer.appendChild(gridItem);
-            displayedCount++;
-            displayedItemsCount++;
+            const gridItemContent = document.getElementById('item-template').content.cloneNode(true);
+            const gridItem = gridItemContent.querySelector('.grid-item');
+            const img = gridItem.querySelector('img');
+            img.src = `https://www.bungie.net${item.displayProperties.icon}`;
+            img.alt = item.displayProperties.name;
+            gridItem.addEventListener('click', () => openSidebar(item));
+            fragment.appendChild(gridItemContent);
+            appendedCount++;
         }
-        debug.success(`Appended ${displayedCount} items to grid.`);
+        gridContainer.appendChild(fragment);
+        displayedItemsCount += appendedCount;
+        debug.success(`Appended ${appendedCount} new items to the grid.`);
     }
 
 
@@ -314,62 +319,77 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Fetch the manifest and display the data
-    fetchData(apiUrl).then(async data => {
-        debug.success('Fetched manifest data.');
-        const itemDefinitionUrl = data.Response.jsonWorldComponentContentPaths.en.DestinyInventoryItemDefinition;
-        const damageTypeDefinitionUrl = data.Response.jsonWorldComponentContentPaths.en.DestinyDamageTypeDefinition;
-        debug.data('Item Definition URL', itemDefinitionUrl);
-        debug.data('Damage Type Definition URL', damageTypeDefinitionUrl);
+    /**
+     * The main initialization function for the application.
+     * Fetches all necessary data from the API and sets up event listeners.
+     */
+    async function initialize() {
+        try {
+            debug.info('Initializing application...');
+            const manifest = await getManifest();
+            debug.success('Manifest loaded.');
 
-        const [itemData, damageTypeData] = await Promise.all([
-            fetch('https://www.bungie.net' + itemDefinitionUrl).then(res => res.json()),
-            fetch('https://www.bungie.net' + damageTypeDefinitionUrl).then(res => res.json())
-        ]);
+            // Fetch item and damage type definitions in parallel.
+            const [itemData, dmgTypeData] = await Promise.all([
+                getDefinitions(manifest.jsonWorldComponentContentPaths.en.DestinyInventoryItemDefinition),
+                getDefinitions(manifest.jsonWorldComponentContentPaths.en.DestinyDamageTypeDefinition)
+            ]);
+            
+            allItems = itemData;
+            // This is a global for the module, used in filter checks.
+            let damageTypeDefinitions = dmgTypeData;
+            debug.success('Item and Damage Type definitions loaded.');
 
-        debug.success('Fetched DestinyInventoryItemDefinition and DestinyDamageTypeDefinition data.');
-        allItems = itemData;
-        const damageTypeDefinitions = damageTypeData;
-        populateFilterMenu(allItems, damageTypeDefinitions); // Populate dropdown after data is loaded
-        
-        function filterItems() {
-            gridContainer.innerHTML = ''; // Clear the grid for initial load or filter change
-            displayedItemsCount = 0; // Reset displayed count
-            filteredItemsIndices = []; // Reset filtered indices
-            itemsToDisplay = calculateItemsToDisplay();
-
-            const searchTerm = document.getElementById('search-bar').value;
-            const filters = {
-                ammoType: Array.from(document.querySelectorAll('input[name="ammoType"]:checked')).map(el => el.value),
-                damageType: Array.from(document.querySelectorAll('input[name="damageType"]:checked')).map(el => el.value),
-                weaponType: Array.from(document.querySelectorAll('input[name="weaponType"]:checked')).map(el => el.value)
-            };
-
-            // When building sortedItems, store both key and value
+            // Sort items alphabetically for consistent ordering.
             sortedItems = Object.entries(allItems)
                 .map(([key, value]) => ({ key, value }))
                 .sort((a, b) => (a.value.displayProperties.name || '').localeCompare(b.value.displayProperties.name || ''));
+            
+            // Now that data is loaded, populate the filter UI and display the initial item grid.
+            populateFilterMenu(allItems, damageTypeDefinitions);
+            filterAndDisplayItems();
+            
+            // --- Event Listeners ---
+            const searchBar = document.getElementById('search-bar');
+            const dropdownContent = document.querySelector('.dropdown-content');
 
-            debug.data('Total items in allItems', Object.keys(allItems).length);
+            closeSidebar.addEventListener('click', closeSidebarFunction);
+            searchBar.addEventListener('input', debounce(filterAndDisplayItems, 300));
+            dropdownContent.addEventListener('change', filterAndDisplayItems);
+            
+            debug.success('Application initialized successfully.');
+        } catch (err) {
+            debug.error('Application initialization failed:', err);
+            // The api.js module will display an error on the page if config fails.
+        }
+    }
 
-            // Build filtered indices
-            filteredItemsIndices = [];
-            for (let i = 0; i < sortedItems.length; i++) {
-                if (passesFilter(sortedItems[i].value, sortedItems[i].key, searchTerm, filters, damageTypeDefinitions)) {
-                    filteredItemsIndices.push(i);
-                }
+    /**
+     * Filters all items based on current criteria and updates the grid.
+     */
+    function filterAndDisplayItems() {
+        gridContainer.innerHTML = ''; // Clear the grid for new results.
+        displayedItemsCount = 0;
+
+        const searchTerm = document.getElementById('search-bar').value.trim().toLowerCase();
+        const filters = {
+            ammoType: Array.from(document.querySelectorAll('input[name="ammoType"]:checked')).map(el => el.value),
+            damageType: Array.from(document.querySelectorAll('input[name="damageType"]:checked')).map(el => el.value),
+            weaponType: Array.from(document.querySelectorAll('input[name="weaponType"]:checked')).map(el => el.value)
+        };
+
+        // Re-build the list of filtered item indices.
+        filteredItemsIndices = [];
+        for (let i = 0; i < sortedItems.length; i++) {
+            if (passesFilter(sortedItems[i].value, sortedItems[i].key, searchTerm, filters, allItems.damageTypeDefinitions)) {
+                filteredItemsIndices.push(i);
             }
-
-            debug.data('Filtered items count', filteredItemsIndices.length);
-            debug.info(`Filtering items: searchTerm='${searchTerm}', filters:`, filters);
-            debug.data('Filtered item indices', filteredItemsIndices);
-            appendItems(sortedItems, 0, itemsToDisplay);
         }
 
-        filterItems(); // Initial display
+        debug.info(`Found ${filteredItemsIndices.length} items matching filters.`);
+        appendItems(sortedItems, 0, calculateItemsToDisplay());
+    }
 
-        const debouncedFilterItems = debounce(filterItems, 300);
-        document.getElementById('search-bar').addEventListener('input', debouncedFilterItems);
-        document.querySelector('.dropdown-content').addEventListener('change', filterItems);
-    }).catch(err => debug.error('Error fetching manifest:', err));
+    // Start the application
+    initialize();
 });

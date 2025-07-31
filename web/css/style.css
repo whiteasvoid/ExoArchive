@@ -380,6 +380,7 @@ body {
     background-color: #2a77ae;
     border-radius: 5px;
     transition: width 0.5s ease-in-out;
+    width: var(--stat-bar-width, 0%); /* Use CSS variable with a fallback */
 }
 
 .stat-value {
