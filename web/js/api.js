@@ -47,16 +47,26 @@ async function fetchAndSetApiKey() {
  * @returns {Promise<any>} The JSON response from the API.
  */
 async function fetchData(url) {
+    // The API key is now handled by the server-side proxy.
+    // We just need to ensure the config is loaded to confirm server health.
     if (!_apiKey) {
         await fetchAndSetApiKey();
     }
-    const response = await fetch(url, {
-        headers: {
-            'X-API-Key': _apiKey
-        }
-    });
+
+    // Construct the proxy URL, ensuring the original URL is properly encoded.
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+
+    const response = await fetch(proxyUrl);
     if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText} for URL: ${url}`);
+        // Try to parse the error message from the proxy.
+        let errorData;
+        try {
+            errorData = await response.json();
+        } catch (e) {
+            // If the response is not JSON, use the status text.
+            errorData = { error: response.statusText };
+        }
+        throw new Error(`API request via proxy failed: ${errorData.error || 'Unknown error'} for URL: ${url}`);
     }
     return response.json();
 }

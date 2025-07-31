@@ -25,29 +25,68 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         """
         Handle GET requests.
-        If the path is /api/config, return the API key.
-        Otherwise, serve static files as usual.
+        - If the path is /api/config, return the API key.
+        - If the path starts with /api/proxy, forward the request to the Bungie API.
+        - Otherwise, serve static files.
         """
         if self.path == '/api/config':
-            if not BUNGIE_API_KEY:
-                self.send_response(500)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                error_response = {'error': 'API key not configured on the server.'}
-                self.wfile.write(json.dumps(error_response).encode('utf-8'))
-                return
-            
-            self.send_response(200)
+            self._handle_api_config()
+        elif self.path.startswith('/api/proxy'):
+            self._handle_proxy_request()
+        else:
+            super().do_GET()
+
+    def _handle_api_config(self):
+        """Handles serving the API key."""
+        if not BUNGIE_API_KEY:
+            self.send_response(500)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            # Create a dictionary to hold the API key
-            config = {'apiKey': BUNGIE_API_KEY}
-            # Write the JSON response
-            self.wfile.write(json.dumps(config).encode('utf-8'))
-        else:
-            # For any other path, fall back to the default behavior
-            # which serves files from the directory specified in the constructor.
-            super().do_GET()
+            self.wfile.write(json.dumps({'error': 'API key not configured.'}).encode('utf-8'))
+            return
+        
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps({'apiKey': BUNGIE_API_KEY}).encode('utf-8'))
+
+    def _handle_proxy_request(self):
+        """Handles proxying requests to the Bungie API."""
+        from urllib.parse import urlparse, parse_qs
+        import requests
+
+        query_components = parse_qs(urlparse(self.path).query)
+        bungie_url = query_components.get('url', [None])[0]
+
+        if not bungie_url:
+            self.send_response(400)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': 'Missing "url" query parameter.'}).encode('utf-8'))
+            return
+
+        if not BUNGIE_API_KEY:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': 'API key not configured on the server.'}).encode('utf-8'))
+            return
+
+        try:
+            headers = {'X-API-Key': BUNGIE_API_KEY}
+            response = requests.get(bungie_url, headers=headers)
+            response.raise_for_status()  # Raise an exception for bad status codes
+
+            self.send_response(response.status_code)
+            self.send_header('Content-type', response.headers['Content-Type'])
+            self.end_headers()
+            self.wfile.write(response.content)
+
+        except requests.exceptions.RequestException as e:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': str(e)}).encode('utf-8'))
 
 # --- Main execution ---
 if __name__ == "__main__":
