@@ -1,4 +1,10 @@
-// Debug utility for styled console output
+/**
+ * @file Item stats and perks viewer.
+ * Fetches and displays item stats, damage types, perks, and source info.
+ * Handles API requests directly and manages interactive UI for item inspection.
+ */
+
+// Debug utility for console output
 const debug = {
     info: (msg, ...args) => console.log(`%c[INFO] %c${msg}`, 'color: #2196f3; font-weight: bold;', 'color: inherit;', ...args),
     warn: (msg, ...args) => console.warn(`%c[WARN] %c${msg}`, 'color: #ff9800; font-weight: bold;', 'color: inherit;', ...args),

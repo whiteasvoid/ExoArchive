@@ -29,26 +29,10 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         - If the path starts with /api/proxy, forward the request to the Bungie API.
         - Otherwise, serve static files.
         """
-        if self.path == '/api/config':
-            self._handle_api_config()
-        elif self.path.startswith('/api/proxy'):
+        if self.path.startswith('/api/proxy'):
             self._handle_proxy_request()
         else:
             super().do_GET()
-
-    def _handle_api_config(self):
-        """Handles serving the API key."""
-        if not BUNGIE_API_KEY:
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({'error': 'API key not configured.'}).encode('utf-8'))
-            return
-        
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps({'apiKey': BUNGIE_API_KEY}).encode('utf-8'))
 
     def _handle_proxy_request(self):
         """Handles proxying requests to the Bungie API."""

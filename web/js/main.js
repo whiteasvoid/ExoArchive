@@ -1,3 +1,9 @@
+/**
+ * @file Main application logic.
+ * Handles UI initialization, item grid rendering, filtering, and sidebar interactions.
+ * Fetches Destiny 2 manifest and item definitions via Bungie.net API (using api.js).
+ */
+
 import { getManifest, getDefinitions } from './api.js';
 
 // Debug utility for styled console output
@@ -11,8 +17,7 @@ const debug = {
 
 debug.info('Main.js loaded.');
 
-// The API key is now handled by the api.js module.
-// The old fetchData function is no longer needed and has been removed.
+// API key is now handled by the api.js module.
 
 document.addEventListener('DOMContentLoaded', () => {
     const gridContainer = document.getElementById('grid-container');
@@ -24,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to calculate how many items are needed to fill the viewport
     function calculateItemsToDisplay() {
         const containerWidth = gridContainer.clientWidth;
-        const controlsHeight = controlsContainer ? controlsContainer.offsetHeight : 60; // Fallback to 60px
+        const controlsHeight = controlsContainer ? controlsContainer.offsetHeight : 60; // If it doesnt exist, defaults to 60px
         const containerHeight = window.innerHeight - controlsHeight; // Adjust for sticky top bar
         const itemWidth = 110; // Approximate width of a grid item (100px + 10px gap)
         const itemHeight = 110; // Approximate height of a grid item
@@ -34,8 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Opens the sidebar and populates it with details for a specific item.
-     * Uses HTML templates to create the content, avoiding innerHTML for better performance and security.
+     * Opens the sidebar and fills it with details for a specific item.
+     * Uses HTML templates to create the content. - Removed innerHTML for better performance and security.
      * @param {object} item - The full data object for the item.
      */
     function openSidebar(item) {
@@ -77,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.open(`stats.html?itemHash=${item.hash}`, '_blank');
             });
         } else {
-            statsTab.innerHTML = '<p>No stats available for this item.</p>';
+            statsTab.innerHTML = '<p>There are no stats available for this item.</p>';
         }
 
         // --- Tab Switching Logic ---
@@ -154,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (damageType) damageTypes.add(damageType.displayProperties.name);
                     });
                 } else {
-                    damageTypes.add('Kinetic'); // Default to Kinetic if no damage type is specified.
+                    damageTypes.add('Kinetic'); // Default to Kinetic if no damage type is assigned.
                 }
             }
         });
@@ -184,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         createFilterCategory('Weapon Type', 'weaponType', Array.from(weaponTypes).sort());
     }
 
-    // Function to check if an item passes the filter criteria
+    // Function to check if an item passes the filter checks.
     function passesFilter(item, hashKey, searchTerm, filters, damageTypeDefinitions) {
         const displayName = item.displayProperties && item.displayProperties.name ? item.displayProperties.name.toLowerCase() : '';
         const displayIcon = item.displayProperties && item.displayProperties.icon ? item.displayProperties.icon : null;
@@ -250,7 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Appends a specified number of items to the grid from the filtered list.
-     * Uses a document fragment to minimize DOM reflows for better performance.
      * @param {Array} itemsArray - The sorted array of all items.
      * @param {number} startFilteredIndex - The starting index in the `filteredItemsIndices` array.
      * @param {number} itemsToAppend - The number of items to add to the grid.
@@ -278,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Debounce function for search input
+    // This function limits how often the filter function is called when typing in the search bar.
     function debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
@@ -307,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Infinite scroll with throttling
+    // This will load more items when the user scrolls near the bottom of the page.
     let isLoadingMore = false;
     window.addEventListener('scroll', () => {
         if (isLoadingMore) return; // Prevent multiple simultaneous loads
@@ -316,12 +322,13 @@ document.addEventListener('DOMContentLoaded', () => {
             appendItems(sortedItems, displayedItemsCount, itemsToAdd);
             itemsToDisplay += itemsToAdd;
             setTimeout(() => { isLoadingMore = false; }, 500); // Throttle to 500ms
+            //Improve performance by throttling the scroll event
         }
     });
 
     /**
      * The main initialization function for the application.
-     * Fetches all necessary data from the API and sets up event listeners.
+     * Fetches all the necessary data from the API and sets up event listeners.
      */
     async function initialize() {
         try {
@@ -329,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const manifest = await getManifest();
             debug.success('Manifest loaded.');
 
-            // Fetch item and damage type definitions in parallel.
+            // Fetch item and damage type definitions at the same time.
             const [itemData, dmgTypeData] = await Promise.all([
                 getDefinitions(manifest.jsonWorldComponentContentPaths.en.DestinyInventoryItemDefinition),
                 getDefinitions(manifest.jsonWorldComponentContentPaths.en.DestinyDamageTypeDefinition)
@@ -345,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .map(([key, value]) => ({ key, value }))
                 .sort((a, b) => (a.value.displayProperties.name || '').localeCompare(b.value.displayProperties.name || ''));
             
-            // Now that data is loaded, populate the filter UI and display the initial item grid.
+            // WIth the data loaded, populate the filter UI and display the initial item grid.
             populateFilterMenu(allItems, damageTypeDefinitions);
             filterAndDisplayItems();
             
