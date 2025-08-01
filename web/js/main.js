@@ -53,6 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const generalContent = document.getElementById('sidebar-general-template').content.cloneNode(true);
         generalContent.querySelector('[data-template="item-name"]').textContent = item.displayProperties.name;
         generalContent.querySelector('[data-template="item-type"]').textContent = item.itemTypeDisplayName || 'N/A';
+        generalContent.querySelector('[data-template="item-rarity"]').textContent = item.inventory.tierTypeName || 'N/A';
+        generalContent.querySelector('[data-template="item-hash"]').textContent = item.hash;
+        generalContent.querySelector('[data-template="item-source"]').textContent = item.source || 'N/A';
         generalContent.querySelector('[data-template="item-description"]').innerHTML = item.displayProperties.description || 'N/A';
         const icon = generalContent.querySelector('[data-template="item-icon"]');
         icon.src = `https://www.bungie.net${item.displayProperties.icon}`;

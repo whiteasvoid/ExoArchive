@@ -127,13 +127,7 @@ body {
 }
 
 #sidebar.open {
-    width: 350px;
-}
-
-@media (max-width: 768px) {
-    #sidebar.open {
-        width: 100%;
-    }
+    width: 60% !important;
 }
 
 #sidebar-content {
