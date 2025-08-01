@@ -1,10 +1,10 @@
+import { getManifest, getDefinitions } from './api.js';
+
 /**
  * @file Main application logic.
  * Handles UI initialization, item grid rendering, filtering, and sidebar interactions.
  * Fetches Destiny 2 manifest and item definitions via Bungie.net API (using api.js).
  */
-
-import { getManifest, getDefinitions } from './api.js';
 
 // Debug utility for styled console output
 const debug = {

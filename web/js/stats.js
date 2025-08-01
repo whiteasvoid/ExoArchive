@@ -1,7 +1,15 @@
+import {
+    getInventoryItemDefinition,
+    getDamageTypeDefinition,
+    getCollectibleDefinition,
+    getStatDefinition,
+    getPlugSetDefinition
+} from './api.js';
+
 /**
  * @file Item stats and perks viewer.
  * Fetches and displays item stats, damage types, perks, and source info.
- * Handles API requests directly and manages interactive UI for item inspection.
+ * It uses the central API module for all Bungie API requests.
  */
 
 // Debug utility for console output
@@ -24,40 +32,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadStart = performance.now();
 
     if (itemHash) {
-        const apiKey = '62af834bf86c4c7bacc5f1473a0149b3';
-        const apiUrl = `https://www.bungie.net/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${itemHash}/`;
         debug.info('Fetching item data from API...');
-        debug.data('API URL', apiUrl);
-
         loadingIndicator.style.display = 'block';
         contentContainer.style.display = 'none';
 
-        fetch(apiUrl, {
-            headers: {
-                'X-API-Key': apiKey
-            }
-        })
-        .then(response => {
-            debug.success('Received response from item API.');
-            return response.json();
-        })
-        .then(async data => {
-            debug.data('Item API response', data);
-            const item = data.Response;
-            document.title = `Inspecting ${item.displayProperties.name}`;
-            let perksContent = '';
+        getInventoryItemDefinition(itemHash)
+            .then(async item => {
+                debug.data('Item API response', item);
+                document.title = `Inspecting ${item.displayProperties.name}`;
+                let perksContent = '';
 
             // Fetch damage type definition
             let damageTypeInfo = '';
             if (item.damageTypeHashes && item.damageTypeHashes.length > 0) {
                 const damageTypeHash = item.damageTypeHashes[0];
-                const damageTypeApiUrl = `https://www.bungie.net/Platform/Destiny2/Manifest/DestinyDamageTypeDefinition/${damageTypeHash}/`;
                 debug.info('Fetching damage type info...');
-                debug.data('Damage Type API URL', damageTypeApiUrl);
-                const damageTypeResponse = await fetch(damageTypeApiUrl, { headers: { 'X-API-Key': apiKey } });
-                const damageTypeData = await damageTypeResponse.json();
-                debug.data('Damage Type API response', damageTypeData);
-                const damageType = damageTypeData.Response;
+                const damageType = await getDamageTypeDefinition(damageTypeHash);
+                debug.data('Damage Type API response', damageType);
                 damageTypeInfo = `
                     <div class="weapon-detail">
                         <img src="https://www.bungie.net${damageType.displayProperties.icon}" alt="${damageType.displayProperties.name}" style="width: 30px; height: 30px;">
@@ -71,13 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fetch collectible definition for source information
             let sourceInfo = '';
             if (item.collectibleHash) {
-                const collectibleApiUrl = `https://www.bungie.net/Platform/Destiny2/Manifest/DestinyCollectibleDefinition/${item.collectibleHash}/`;
                 debug.info('Fetching collectible info...');
-                debug.data('Collectible API URL', collectibleApiUrl);
-                const collectibleResponse = await fetch(collectibleApiUrl, { headers: { 'X-API-Key': apiKey } });
-                const collectibleData = await collectibleResponse.json();
-                debug.data('Collectible API response', collectibleData);
-                const collectible = collectibleData.Response;
+                const collectible = await getCollectibleDefinition(item.collectibleHash);
+                debug.data('Collectible API response', collectible);
                 sourceInfo = collectible.sourceString;
             } else {
                 debug.warn('No collectibleHash found for item.');
@@ -95,21 +82,17 @@ document.addEventListener('DOMContentLoaded', () => {
             let statsContent = '';
             if (item.stats && item.stats.stats) {
                 const statHashes = Object.keys(item.stats.stats);
-                const statDefinitions = await Promise.all(statHashes.map(statHash =>
-                    fetch(`https://www.bungie.net/Platform/Destiny2/Manifest/DestinyStatDefinition/${statHash}/`, {
-                        headers: { 'X-API-Key': apiKey }
-                    }).then(res => res.json())
-                ));
+                const statDefinitions = await Promise.all(
+                    statHashes.map(statHash => getStatDefinition(statHash))
+                );
 
                 statsContent = '<div class="stats-container">';
-                const filteredStatDefinitions = statDefinitions.filter(statDefResponse => {
-                    const statDef = statDefResponse.Response;
+                const filteredStatDefinitions = statDefinitions.filter(statDef => {
                     const statName = statDef.displayProperties.name;
                     return statName && statName !== 'Attack' && statName !== 'Power';
                 });
 
-                for (const statDefResponse of filteredStatDefinitions) {
-                    const statDef = statDefResponse.Response;
+                for (const statDef of filteredStatDefinitions) {
                     const statValue = item.stats.stats[statDef.hash].value;
                     statsContent += `
                         <div class="stat-bar-container">
@@ -136,24 +119,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const perkPromises = perkCategoryHashes.map(async (socketIndex, colIdx) => {
                         const socket = item.sockets.socketEntries[socketIndex];
                         if (socket.randomizedPlugSetHash) {
-                            const plugSetApiUrl = `https://www.bungie.net/Platform/Destiny2/Manifest/DestinyPlugSetDefinition/${socket.randomizedPlugSetHash}/`;
                             debug.info('Fetching plug set info...');
-                            debug.data('Plug Set API URL', plugSetApiUrl);
-                            const plugSetResponse = await fetch(plugSetApiUrl, { headers: { 'X-API-Key': apiKey } });
-                            const plugSetData = await plugSetResponse.json();
-                            debug.data('Plug Set API response', plugSetData);
-                            const plugSet = plugSetData.Response;
+                            const plugSet = await getPlugSetDefinition(socket.randomizedPlugSetHash);
+                            debug.data('Plug Set API response', plugSet);
 
                             if (plugSet.reusablePlugItems) {
                                 debug.success('Found reusable plug items.');
                                 const plugResults = await Promise.all(plugSet.reusablePlugItems.map(async (plug) => {
-                                    const plugApiUrl = `https://www.bungie.net/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${plug.plugItemHash}/`;
                                     debug.info('Fetching plug item info...');
-                                    debug.data('Plug Item API URL', plugApiUrl);
                                     try {
-                                        const plugResponse = await fetch(plugApiUrl, { headers: { 'X-API-Key': apiKey } });
-                                        const plugData = await plugResponse.json();
-                                        const plugItem = plugData.Response;
+                                        const plugItem = await getInventoryItemDefinition(plug.plugItemHash);
                                         const perkDescription = plugItem.displayProperties.description ? plugItem.displayProperties.description.replace(/\n/g, '<br>') : 'No description available.';
                                         return { success: true, name: plugItem.displayProperties.name, html: `\n                                    <div class=\"perk\" data-perk-name=\"${plugItem.displayProperties.name}\" data-perk-description=\"${perkDescription}\">\n                                        <img src=\"https://www.bungie.net${plugItem.displayProperties.icon}\" alt=\"${plugItem.displayProperties.name}\" style=\"width: 50px;\">\n                                    </div>\n                                ` };
                                     } catch (err) {
