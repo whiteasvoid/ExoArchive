@@ -113,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let allItems = {};
+    let damageTypeDefinitions = {};
     let sortedItems = [];
     let itemsToDisplay = calculateItemsToDisplay();
     let displayedItemsCount = 0; // Track total displayed items across all loads
@@ -343,8 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ]);
             
             allItems = itemData;
-            // This is a global for the module, used in filter checks.
-            let damageTypeDefinitions = dmgTypeData;
+            damageTypeDefinitions = dmgTypeData;
             debug.success('Item and Damage Type definitions loaded.');
 
             // Sort items alphabetically for consistent ordering.
@@ -388,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Re-build the list of filtered item indices.
         filteredItemsIndices = [];
         for (let i = 0; i < sortedItems.length; i++) {
-            if (passesFilter(sortedItems[i].value, sortedItems[i].key, searchTerm, filters, allItems.damageTypeDefinitions)) {
+            if (passesFilter(sortedItems[i].value, sortedItems[i].key, searchTerm, filters, damageTypeDefinitions)) {
                 filteredItemsIndices.push(i);
             }
         }
