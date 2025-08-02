@@ -351,3 +351,11 @@ body {
         width: 100%;
     }
 }
+
+.nav-link {
+    color: #fff;
+    padding: 10px 15px;
+    background-color: #2a9fae;
+    margin-left: 10px;
+    text-decoration: none;
+}

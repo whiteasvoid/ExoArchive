@@ -1,6 +1,9 @@
 # Environment variables
 .env
 
+# SSL certificates
+certs/
+
 # Python virtual environment
 venv/
 __pycache__/

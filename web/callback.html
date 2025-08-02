@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Callback - Exo Archive</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Authentication Callback</h1>
+        <p id="callback-status">Processing authentication...</p>
+        <a href="/">Go back to the homepage</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const statusElement = document.getElementById('callback-status');
+            const urlParams = new URLSearchParams(window.location.search);
+            const authStatus = urlParams.get('status');
+            const error = urlParams.get('error');
+
+            if (authStatus === 'success') {
+                statusElement.textContent = 'Authentication successful! Redirecting to your profile...';
+                statusElement.style.color = '#4caf50';
+                setTimeout(() => {
+                    window.location.href = '/profile';
+                }, 2000); // 2 second delay before redirect
+            } else if (authStatus === 'error') {
+                statusElement.textContent = `Authentication failed: ${error || 'An unknown error occurred.'}`;
+                statusElement.style.color = '#f44336';
+            }
+        });
+    </script>
+</body>
+</html>

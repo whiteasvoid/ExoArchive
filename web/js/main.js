@@ -19,7 +19,8 @@ debug.info('Main.js loaded.');
 
 // API key is now handled by the api.js module.
 
-document.addEventListener('DOMContentLoaded', () => {
+// Added because of the Login and Profile pages.
+document.addEventListener('DOMContentLoaded', async () => {
     const gridContainer = document.getElementById('grid-container');
     const sidebar = document.getElementById('sidebar');
     const closeSidebar = document.getElementById('close-sidebar');
@@ -31,8 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const containerWidth = gridContainer.clientWidth;
         const controlsHeight = controlsContainer ? controlsContainer.offsetHeight : 60; // If it doesnt exist, defaults to 60px
         const containerHeight = window.innerHeight - controlsHeight; // Adjust for sticky top bar
-        const itemWidth = 110; // Approximate width of a grid item (100px + 10px gap)
-        const itemHeight = 110; // Approximate height of a grid item
+        const itemWidth = 110; // +/- width of a grid item (100px + 10px gap)
+        const itemHeight = 110; // +/- height of a grid item
         const columns = Math.floor(containerWidth / itemWidth);
         const rows = Math.ceil(containerHeight / itemHeight);
         return Math.max(columns * rows * 2.5, 50); // Load 2.5x viewport height, minimum 50 items
@@ -145,6 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Populates the filter dropdown menu based on available item properties.
      * Creates filter options dynamically from the loaded item data using templates.
+     * @param {any} items - The full item data object.
+     * @param {any} damageTypeDefinitions - The definitions for damage types.
      */
     function populateFilterMenu(items, damageTypeDefinitions) {
         const filterContainer = document.querySelector('.dropdown-content');
@@ -193,6 +196,15 @@ document.addEventListener('DOMContentLoaded', () => {
         createFilterCategory('Weapon Type', 'weaponType', Array.from(weaponTypes).sort());
     }
 
+    /**
+     * Check if an item passes the filter checks.
+     * @param {any} item - The json object of the item to check.
+     * @param {string} hashKey - The hash key of the item.
+     * @param {string} searchTerm - The search term to filter items. (name or hash)
+     * @param {any} filters - The current filter settings.
+     * @param {any} damageTypeDefinitions - The definitions for damage types.
+     * @return {boolean} - Returns true if the item passes all filter checks, false otherwise.
+     */
     // Function to check if an item passes the filter checks.
     function passesFilter(item, hashKey, searchTerm, filters, damageTypeDefinitions) {
         const displayName = item.displayProperties && item.displayProperties.name ? item.displayProperties.name.toLowerCase() : '';
