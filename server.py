@@ -45,6 +45,9 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         elif parsed_path == '/profile':
             self.path = '/profile.html'
             super().do_GET()
+        elif parsed_path == '/loadout-tracker':
+            self.path = '/loadout-tracker.html'
+            super().do_GET()
         elif parsed_path == '/api/oauth-client-id':
             self._handle_oauth_client_id_request()
         elif parsed_path == '/callback':
@@ -57,6 +60,71 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_proxy_request()
         else:
             super().do_GET()
+
+    def do_POST(self):
+        """Handle POST requests."""
+        parsed_path = urlparse(self.path).path
+        if parsed_path.startswith('/api/proxy'):
+            self._handle_proxy_post_request()
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def _handle_proxy_post_request(self):
+        """Handles proxying POST requests to the Bungie API."""
+        try:
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data)
+
+            bungie_url = data.get('url')
+            bungie_body = data.get('body')
+
+            if not bungie_url:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': 'Missing "url" in request body.'}).encode('utf-8'))
+                return
+
+            if not BUNGIE_API_KEY:
+                self.send_response(500)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': 'API key not configured on the server.'}).encode('utf-8'))
+                return
+
+            headers = {'X-API-Key': BUNGIE_API_KEY, 'Content-Type': 'application/json'}
+            
+            cookie_header = self.headers.get('Cookie')
+            if cookie_header:
+                cookie = SimpleCookie()
+                cookie.load(cookie_header)
+                if 'access_token' in cookie:
+                    access_token = cookie['access_token'].value
+                    headers['Authorization'] = f'Bearer {access_token}'
+
+            response = requests.post(bungie_url, headers=headers, json=bungie_body)
+
+            if response.status_code == 401:
+                self.send_response(401)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': 'Unauthorized'}).encode('utf-8'))
+                return
+
+            response.raise_for_status()
+
+            self.send_response(response.status_code)
+            self.send_header('Content-type', response.headers['Content-Type'])
+            self.end_headers()
+            self.wfile.write(response.content)
+
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': str(e)}).encode('utf-8'))
 
     def _handle_user_api_request(self):
         """Handles requests to the /api/user endpoint."""
