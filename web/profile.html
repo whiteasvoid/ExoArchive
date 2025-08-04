@@ -5,15 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile - Exo Archive</title>
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/profile.css">
 </head>
 <body>
-    <div class="container">
-        <h1>User Profile</h1>
-        <div id="profile-info">
-            <p>Loading profile...</p>
+    <div class="profile-container">
+        <div class="profile-header">
+            <h1>User Profile</h1>
+            <div id="profile-info">
+                <p>Loading profile...</p>
+            </div>
         </div>
+        
+        <div id="characters-container" class="characters-container">
+            <!-- Characters will be inserted here using profile.js -->
+        </div>
+        
         <br>
-        <a href="/">Go back to the homepage</a>
+        <a href="/" class="nav-link" style="text-align: center; display: block; margin-top: 20px;">Go back to the homepage</a>
     </div>
 
     <script src="js/profile.js" type="module"></script>
