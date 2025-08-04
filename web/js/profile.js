@@ -1,3 +1,49 @@
+let characterEquipmentData = null;
+let primaryMembership = null;
+
+async function pollForEquipmentChanges() {
+    if (!primaryMembership) return;
+
+    const { membershipType, membershipId } = primaryMembership;
+    const profileUrl = `https://www.bungie.net/Platform/Destiny2/${membershipType}/Profile/${membershipId}/?components=200,205`;
+    const profileResponse = await fetch(`/api/proxy?url=${encodeURIComponent(profileUrl)}`);
+
+    if (!profileResponse.ok) {
+        console.error(`Bungie API request for profile failed with status ${profileResponse.status}`);
+        return;
+    }
+
+    const profileData = await profileResponse.json();
+    if (profileData.ErrorCode !== 1) {
+        console.error(`Bungie API Error for Profile: ${profileData.Message}`);
+        return;
+    }
+
+    const newEquipmentData = profileData.Response.characterEquipment.data;
+
+    for (const characterId in newEquipmentData) {
+        const oldItems = characterEquipmentData[characterId].items.map(item => item.itemInstanceId).sort();
+        const newItems = newEquipmentData[characterId].items.map(item => item.itemInstanceId).sort();
+
+        if (JSON.stringify(oldItems) !== JSON.stringify(newItems)) {
+            console.log(`Equipment changed for character ${characterId}`);
+            handleEquipmentChange(characterId, newEquipmentData[characterId].items);
+        }
+    }
+
+    characterEquipmentData = newEquipmentData;
+}
+
+function handleEquipmentChange(characterId, newEquipment) {
+    const characterCard = document.querySelector(`.character-card[data-character-id='${characterId}']`);
+    if (characterCard) {
+        const equipmentDisplay = characterCard.querySelector('.equipment-display');
+        if (equipmentDisplay) {
+            renderEquipment(newEquipment, characterCard, true);
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const profileInfoDiv = document.getElementById('profile-info');
     const charactersContainer = document.getElementById('characters-container');
@@ -20,7 +66,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Function to render character cards
-    function renderCharacters(characters) {
+    function renderCharacters(profileResponse) {
+        const characters = profileResponse.characters.data;
+        characterEquipmentData = profileResponse.characterEquipment.data;
+        const characterEquipment = characterEquipmentData;
+
         if (!characters) {
             charactersContainer.innerHTML = '<p>Could not load character data.</p>';
             return;
@@ -37,6 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const card = document.createElement('div');
             card.className = 'character-card';
+            card.dataset.characterId = characterId;
             card.innerHTML = `
                 <div class="character-emblem" style="background-image: url('${emblemPath}')"></div>
                 <div class="character-details">
@@ -49,6 +100,163 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
             charactersContainer.appendChild(card);
         }
+
+        const toggleEquipmentButton = document.getElementById('toggle-equipment-button');
+        let allEquipmentVisible = false;
+
+        toggleEquipmentButton.addEventListener('click', () => {
+            allEquipmentVisible = !allEquipmentVisible;
+            toggleEquipmentButton.textContent = allEquipmentVisible ? 'Hide All Equipment' : 'Show All Equipment';
+
+            const characterCards = document.querySelectorAll('.character-card');
+            characterCards.forEach(card => {
+                const characterId = card.dataset.characterId;
+                const equipment = characterEquipment[characterId].items;
+                renderEquipment(equipment, card, allEquipmentVisible);
+            });
+        });
+    }
+
+    const slotHashes = {
+        kinetic: 1498876634,
+        energy: 2465295065,
+        power: 953998645,
+        helmet: 3448274439,
+        gauntlets: 3551918588,
+        chest: 14239492,
+        legs: 20886954,
+        classItem: 1585787867,
+    };
+
+    async function fetchItemDefinition(itemHash, retries = 3, delay = 1000) {
+        const url = `https://www.bungie.net/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${itemHash}/`;
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
+                if (!response.ok) {
+                    throw new Error(`Bungie API request for item definition failed with status ${response.status}`);
+                }
+                const data = await response.json();
+                if (data.ErrorCode !== 1) {
+                    throw new Error(`Bungie API Error for Item Definition: ${data.Message}`);
+                }
+                return data.Response;
+            } catch (error) {
+                console.error(`Error fetching item definition for hash ${itemHash} (attempt ${i + 1}/${retries}):`, error);
+                if (i < retries - 1) {
+                    await new Promise(res => setTimeout(res, delay));
+                } else {
+                    return null;
+                }
+            }
+        }
+    }
+
+    // Function to render equipment
+    async function renderEquipment(equipment, characterCard, show) {
+        const existingEquipment = characterCard.querySelector('.equipment-display');
+
+        if (!show) {
+            if (existingEquipment) {
+                existingEquipment.remove();
+            }
+            return;
+        }
+
+        if (existingEquipment) {
+            return; // Already visible
+        }
+
+        const equipmentContainer = document.createElement('div');
+        equipmentContainer.className = 'equipment-display';
+        equipmentContainer.innerHTML = '<h3>Loading equipment...</h3>';
+        characterCard.appendChild(equipmentContainer);
+
+        const itemPromises = equipment.map(item => fetchItemDefinition(item.itemHash));
+        const items = await Promise.all(itemPromises);
+
+        const weapons = {
+            kinetic: null,
+            energy: null,
+            power: null,
+        };
+        const armor = {
+            helmet: null,
+            gauntlets: null,
+            chest: null,
+            legs: null,
+            classItem: null,
+        };
+
+        items.forEach(item => {
+            if (item) {
+                const bucketHash = item.inventory.bucketTypeHash;
+                switch (bucketHash) {
+                    case slotHashes.kinetic:
+                        weapons.kinetic = item;
+                        break;
+                    case slotHashes.energy:
+                        weapons.energy = item;
+                        break;
+                    case slotHashes.power:
+                        weapons.power = item;
+                        break;
+                    case slotHashes.helmet:
+                        armor.helmet = item;
+                        break;
+                    case slotHashes.gauntlets:
+                        armor.gauntlets = item;
+                        break;
+                    case slotHashes.chest:
+                        armor.chest = item;
+                        break;
+                    case slotHashes.legs:
+                        armor.legs = item;
+                        break;
+                    case slotHashes.classItem:
+                        armor.classItem = item;
+                        break;
+                }
+            }
+        });
+
+        let html = '<div class="equipment-grid">';
+        
+        // Render Weapons
+        html += '<div>';
+        html += '<h3>Weapons</h3>';
+        ['kinetic', 'energy', 'power'].forEach(slot => {
+            const item = weapons[slot];
+            if (item) {
+                html += `
+                    <div class="equipment-item">
+                        <img src="https://www.bungie.net${item.displayProperties.icon}" alt="${item.displayProperties.name}">
+                        <p>${item.displayProperties.name}</p>
+                    </div>
+                `;
+            }
+        });
+        html += '</div>';
+
+        // Render Armor
+        html += '<div>';
+        html += '<h3>Armor</h3>';
+        ['helmet', 'gauntlets', 'chest', 'legs', 'classItem'].forEach(slot => {
+            const item = armor[slot];
+            if (item) {
+                html += `
+                    <div class="equipment-item">
+                        <img src="https://www.bungie.net${item.displayProperties.icon}" alt="${item.displayProperties.name}">
+                        <p>${item.displayProperties.name}</p>
+                    </div>
+                `;
+            }
+        });
+        html += '</div>';
+
+        html += '</div>';
+
+        equipmentContainer.innerHTML = html;
     }
 
     async function fetchProfile() {
@@ -82,10 +290,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             // Get profile (character) data for the first
-            const primaryMembership = destinyMemberships[0];
+            primaryMembership = destinyMemberships[0];
             const { membershipType, membershipId } = primaryMembership;
             
-            const profileUrl = `https://www.bungie.net/Platform/Destiny2/${membershipType}/Profile/${membershipId}/?components=200`;
+            const profileUrl = `https://www.bungie.net/Platform/Destiny2/${membershipType}/Profile/${membershipId}/?components=200,205`;
             const profileResponse = await fetch(`/api/proxy?url=${encodeURIComponent(profileUrl)}`);
 
             if (!profileResponse.ok) {
@@ -97,8 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 throw new Error(`Bungie API Error for Profile: ${profileData.Message}`);
             }
 
-            const characters = profileData.Response.characters.data;
-            renderCharacters(characters);
+            renderCharacters(profileData.Response);
 
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -108,4 +315,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     fetchProfile();
+
+    setInterval(pollForEquipmentChanges, 300000); // 5 minutes
 });
